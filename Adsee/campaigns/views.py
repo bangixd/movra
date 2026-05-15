@@ -12,8 +12,9 @@ from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignS
     CampaignAreaDetailSerializer, CampaignAreaCreateSerializer, CampaignPricingRuleSerializer,\
     CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer
 from .services.campaign_pricing_service import CampaignPricingService
-from ..core.permissions import IsClientUser, IsOwnerOrAdmin
-from ..vehicles.models import VehicleType
+from permissions import IsClientUser, IsOwnerOrAdmin
+from vehicles.models import VehicleType
+from mixins import SafeGetQuerysetMixin
 
 
 class CampaignViewSet(ModelViewSet):
@@ -27,13 +28,16 @@ class CampaignViewSet(ModelViewSet):
         serializer.save(client=self.request.user.client_profile)
 
 
-class CampaignSettingViewSet(ModelViewSet):
-    permission_classes = [IsClientUser,]
+class CampaignSettingViewSet(SafeGetQuerysetMixin, ModelViewSet):
+    permission_classes = [IsAuthenticated, IsClientUser,]
     serializer_class = CampaignSettingSerializer
     queryset = CampaignSetting.objects.all() # یا فیلتر شده بر اساس campaign
 
     def get_queryset(self):
-        campaign_id = Campaign.objects.filter(client=self.request.user.client_profile)
+        user = self.request.user
+        if not user.is_authenticated:
+            return Campaign.objects.none()
+        campaign_id = Campaign.objects.filter(client=self.request.user)
         if campaign_id:
             return CampaignSetting.objects.filter(campaign_id=campaign_id)
         return CampaignSetting.objects.none()
@@ -71,15 +75,19 @@ class CampaignDesignViewSet(ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(campaign__client=self.request.user.client_profile)
+        user = self.request.user
+        if not user.is_authenticated:
+            return qs.none()
+        return qs.filter(campaign__client=self.request.user)
 
 
 class CampaignAreaViewSet(ModelViewSet):
     permission_classes = [IsClientUser,]
 
     def get_queryset(self):
-        user = self.request.user.client_profile
-
+        user = self.request.user
+        if not user.is_authenticated:
+            return CampaignArea.objects.none()
         queryset = CampaignArea.objects.select_related(
             "campaign",
             "city",
@@ -238,10 +246,12 @@ class CampaignInvoiceViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return CampaignInvoice.objects.none()
         if user.is_staff:
             return CampaignInvoice.objects.all()
         # کلاینت: فقط فاکتورهای برندهای خودش
-        return CampaignInvoice.objects.filter(campaign__brand__client=user)
+        return CampaignInvoice.objects.filter(campaign__brand_name__client=user)
 
     @action(detail=True, methods=['patch'])
     def pay(self, request, pk=None):

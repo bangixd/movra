@@ -5,7 +5,7 @@ from .serializers import (
     VehicleListSerializer,
     VehicleDetailSerializer,
 )
-from ..core.permissions import IsAdminOrReadOnly, IsDriverUser
+from permissions import IsAdminOrReadOnly, IsDriverUser
 
 
 class VehicleTypeViewSet(viewsets.ModelViewSet):
@@ -23,7 +23,9 @@ class VehicleViewSet(viewsets.ModelViewSet):
         return VehicleDetailSerializer
 
     def get_queryset(self):
-        user = self.request.user.driver_profile
+        user = self.request.user
+        if not user.is_authenticated:
+            return Vehicle.objects.none()
         if user.is_staff:
             return Vehicle.objects.all()
         return Vehicle.objects.filter(driver=user)

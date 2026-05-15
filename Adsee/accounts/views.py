@@ -13,13 +13,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
-from ..utils import send_otp_sms, send_kyc_to_external_service
+from utils import send_otp_sms, send_kyc_to_external_service
 from .serializers import (UserSerializer, OTPRequestSerializer, OTPVerifySerializer, DriverProfileSerializer,
                           ClientProfileSerializer, DriverDocumentSerializer, DriverProfileKycUpdateSerializer,
                           DriverProfileKycStatusSerializer,
                           )
 from .models import OTP, DriverProfile, ClientProfile, DriverDocument
-from ..core.permissions import IsClientUser, IsDriverUser, IsOwnerOrAdmin
+from permissions import IsClientUser, IsDriverUser, IsOwnerOrAdmin
 
 
 User = get_user_model()

@@ -11,13 +11,14 @@ from .serializers import (
     TripDetailSerializer,
     TripStatusUpdateSerializer,
 )
-from ..campaigns.models import Campaign
-from ..campaigns.serializers import CampaignBriefSerializer
-from ..core.permissions import IsDriverUser
+from campaigns.models import Campaign
+from campaigns.serializers import CampaignBriefSerializer
+from permissions import IsDriverUser
+from rest_framework.permissions import IsAuthenticated
 
 
 class TripViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsDriverUser]
+    permission_classes = [IsAuthenticated, IsDriverUser,]
     queryset = Trip.objects.all()
 
     def get_serializer_class(self):
@@ -31,6 +32,8 @@ class TripViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return Trip.objects.none()
         if user.is_staff:
             return Trip.objects.all()
         return Trip.objects.filter(driver=user)

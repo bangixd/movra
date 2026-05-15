@@ -7,7 +7,7 @@ from django.contrib.auth.models import (
 from django.db import models
 from django.core.validators import RegexValidator
 from django.conf import settings
-from ..utils import upload_document_path
+from utils import upload_document_path
 
 
 class UserManager(BaseUserManager):

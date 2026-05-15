@@ -1,12 +1,12 @@
 from rest_framework import viewsets, permissions
 from .models import Province, City, Neighborhood, SuggestedRoute, DriverLocation
-from ..trips.models import Trip
+from trips.models import Trip
 from .serializers import (
     ProvinceSerializer, CitySerializer, CityListSerializer,
     NeighborhoodSerializer, SuggestedRouteSerializer,
     DriverLocationCreateSerializer, DriverLocationReadSerializer
 )
-from ..core.permissions import IsDriverUser
+from permissions import IsDriverUser
 
 
 class ProvinceViewSet(viewsets.ModelViewSet):
@@ -64,6 +64,8 @@ class DriverLocationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return DriverLocation.objects.none()
         if user.is_staff:
             return DriverLocation.objects.all()
         return DriverLocation.objects.filter(driver=user)
