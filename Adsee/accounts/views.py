@@ -6,23 +6,20 @@ from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 # from django.core import cache
-
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
-
 from rest_framework import status, viewsets, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
-
-from utils import send_otp_sms, send_kyc_to_external_service
-
+from ..utils import send_otp_sms, send_kyc_to_external_service
 from .serializers import (UserSerializer, OTPRequestSerializer, OTPVerifySerializer, DriverProfileSerializer,
                           ClientProfileSerializer, DriverDocumentSerializer, DriverProfileKycUpdateSerializer,
                           DriverProfileKycStatusSerializer,
                           )
 from .models import OTP, DriverProfile, ClientProfile, DriverDocument
+from ..core.permissions import IsClientUser, IsDriverUser, IsOwnerOrAdmin
 
 
 User = get_user_model()
@@ -198,7 +195,7 @@ class DriverProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = DriverProfile.objects.all()
     serializer_class = DriverProfileSerializer
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated, IsDriverUser]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
 
@@ -224,7 +221,7 @@ class DriverDocumentUploadView(APIView):
     """
     API برای آپلود مدارک توسط راننده.
     """
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated, IsDriverUser]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -284,7 +281,7 @@ class DriverKycStatusView(APIView):
     """
     API برای نمایش وضعیت کلی KYC و جزئیات مدارک آپلود شده توسط راننده.
     """
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     def get(self, request, *args, **kwargs):
         try:
@@ -310,7 +307,7 @@ class DriverProfileKycAdminView(APIView):
     """
     API برای ادمین جهت بررسی، تأیید یا رد مدارک و پروفایل راننده.
     """
-    permission_classes = [IsAuthenticated,]  # فرض می‌کنیم IsAdminUser را داریم
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]  # فرض می‌کنیم IsAdminUser را داریم
 
     def get(self, request, user_id, format=None):
         """
@@ -511,7 +508,7 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = ClientProfile.objects.all()
     serializer_class = ClientProfileSerializer
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated, IsClientUser]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
 
