@@ -1,0 +1,117 @@
+from django.db import models
+from accounts.models import DriverProfile
+from django.core.exceptions import ValidationError
+
+
+class Trip(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        ACTIVE = 'ACTIVE', 'Active'
+        PAUSED = 'PAUSED', 'Paused'
+        COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    driver = models.ForeignKey(
+        DriverProfile,
+        on_delete=models.CASCADE,
+        related_name='trips'
+    )
+    campaign = models.ForeignKey(
+        'campaigns.Campaign',
+        on_delete=models.PROTECT,
+        related_name='trips'
+    )
+    vehicle = models.ForeignKey(
+        'vehicles.Vehicle',
+        on_delete=models.PROTECT,
+        related_name='trips'
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    # آمار نهایی (ممکن است بعداً توسط API خارجی پر شود)
+    total_active_seconds = models.PositiveIntegerField(default=0)
+    total_distance_km = models.FloatField(default=0.0)
+    earnings = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="درآمد محاسبه‌شده توسط سرویس خارجی"
+    )
+
+    # اسنپ‌شات تنظیمات کمپین و خودرو در لحظه‌ی ایجاد
+    snapshot = models.JSONField(default=dict)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['driver'],
+                condition=~models.Q(status__in=['COMPLETED', 'CANCELLED']),
+                name='unique_active_trip_per_driver'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['driver', '-created_at']),
+        ]
+
+    def clean(self):
+        super().clean()
+        # ۱. خودرو باید متعلق به راننده باشد
+        if self.vehicle_id and self.driver_id:
+            if self.vehicle.driver_id != self.driver_id:
+                raise ValidationError("این خودرو متعلق به شما نیست.")
+
+        # ۲. راننده فقط یک سفر فعال می‌تواند داشته باشد
+        if self.status not in [self.Status.COMPLETED, self.Status.CANCELLED]:
+            if Trip.objects.filter(
+                driver=self.driver
+            ).exclude(
+                pk=self.pk
+            ).exclude(
+                status__in=[self.Status.COMPLETED, self.Status.CANCELLED]
+            ).exists():
+                raise ValidationError("شما یک سفر فعال دیگر دارید.")
+
+        # ۳. کمپین نباید بیش از max_drivers راننده همزمان داشته باشد
+        if self.status not in [self.Status.COMPLETED, self.Status.CANCELLED]:
+            active_trips_count = Trip.objects.filter(
+                campaign=self.campaign
+            ).exclude(
+                status__in=[self.Status.COMPLETED, self.Status.CANCELLED]
+            ).exclude(pk=self.pk).count()
+            if self.campaign.setting.max_drivers and active_trips_count >= self.campaign.setting.max_drivers:
+                raise ValidationError("ظرفیت راننده‌های این کمپین تکمیل شده است.")
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:  # فقط هنگام ایجاد اولیه
+            # اسنپ‌شات از اطلاعات ضروری
+            self.snapshot = {
+                'campaign': {
+                    'id': self.campaign_id,
+                    'title': self.campaign.title,
+                    'start_date': str(self.campaign.start_date),
+                    'end_date': str(self.campaign.end_date),
+                },
+                'vehicle': {
+                    'id': self.vehicle_id,
+                    'type': self.vehicle.vehicle_type.name,
+                    'hourly_rate': str(self.vehicle.hourly_rate),
+                    'plate': self.vehicle.plate_number,
+                },
+                'area_type': self.campaign.area.area_type if hasattr(self.campaign, 'area') else None,
+            }
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Trip {self.id} - {self.driver} ({self.status})"
