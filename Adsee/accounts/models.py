@@ -40,7 +40,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
 
     class Role(models.TextChoices):
-        ADMIN = "ADMIN", "شdmin"
+        ADMIN = "ADMIN", "Admin"
         CLIENT = "CLIENT", "Client"
         DRIVER = "DRIVER", "Driver"
 
