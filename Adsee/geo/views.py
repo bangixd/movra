@@ -1,23 +1,31 @@
-# apps/geo/views.py
 from rest_framework import viewsets, permissions
 from .models import Province, City, Neighborhood, SuggestedRoute, DriverLocation
-from trips.models import Trip
+from ..trips.models import Trip
 from .serializers import (
     ProvinceSerializer, CitySerializer, CityListSerializer,
     NeighborhoodSerializer, SuggestedRouteSerializer,
     DriverLocationCreateSerializer, DriverLocationReadSerializer
 )
+from ..core.permissions import IsDriverUser
 
 
 class ProvinceViewSet(viewsets.ModelViewSet):
     queryset = Province.objects.all()
     serializer_class = ProvinceSerializer
-    permission_classes = [permissions.IsAuthenticated]  # هر کاربر وارد شده
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
 
 class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -28,18 +36,25 @@ class CityViewSet(viewsets.ModelViewSet):
 class NeighborhoodViewSet(viewsets.ModelViewSet):
     queryset = Neighborhood.objects.all()
     serializer_class = NeighborhoodSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
 
 class SuggestedRouteViewSet(viewsets.ModelViewSet):
     queryset = SuggestedRoute.objects.all()
     serializer_class = SuggestedRouteSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
 
 class DriverLocationViewSet(viewsets.ModelViewSet):
-    # فقط راننده‌ها می‌تونن لوکیشن ثبت کنن
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsDriverUser]
     queryset = DriverLocation.objects.all()
 
     def get_serializer_class(self):
@@ -59,4 +74,4 @@ class DriverLocationViewSet(viewsets.ModelViewSet):
         ).exclude(
             status__in=[Trip.Status.COMPLETED, Trip.Status.CANCELLED]
         ).first()
-        serializer.save(driver=self.request.user, trip=active_trip)
+        serializer.save(driver=self.request.user.driver_profile, trip=active_trip)

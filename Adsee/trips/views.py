@@ -11,17 +11,13 @@ from .serializers import (
     TripDetailSerializer,
     TripStatusUpdateSerializer,
 )
-from campaigns.models import Campaign
-from campaigns.serializers import CampaignBriefSerializer
-
-
-class IsDriver(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.is_driver  # یا پروفایل
+from ..campaigns.models import Campaign
+from ..campaigns.serializers import CampaignBriefSerializer
+from ..core.permissions import IsDriverUser
 
 
 class TripViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsDriver]
+    permission_classes = [IsDriverUser]
     queryset = Trip.objects.all()
 
     def get_serializer_class(self):
@@ -158,6 +154,8 @@ class TripViewSet(viewsets.ModelViewSet):
         serializer = CampaignBriefSerializer(campaigns, many=True)
         return Response(serializer.data)
 
+
+    # به جهت دریافت لیست کمپین هایی که راننده در محدوده اونها هست
     # @action(detail=False, methods=['get'])
     # def available_campaigns(self, request):
     #     """

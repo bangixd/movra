@@ -7,8 +7,7 @@ from django.contrib.auth.models import (
 from django.db import models
 from django.core.validators import RegexValidator
 from django.conf import settings
-
-from utils import upload_document_path
+from ..utils import upload_document_path
 
 
 class UserManager(BaseUserManager):
@@ -41,7 +40,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
 
     class Role(models.TextChoices):
-        ADMIN = "ADMIN", "Admin"
+        ADMIN = "ADMIN", "شdmin"
         CLIENT = "CLIENT", "Client"
         DRIVER = "DRIVER", "Driver"
 

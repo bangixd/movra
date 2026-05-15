@@ -1,6 +1,6 @@
 from django.db import models
 from decimal import Decimal
-from accounts.models import DriverProfile
+from ..accounts.models import DriverProfile
 
 
 class VehicleType(models.Model):

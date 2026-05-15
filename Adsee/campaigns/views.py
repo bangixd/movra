@@ -12,11 +12,12 @@ from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignS
     CampaignAreaDetailSerializer, CampaignAreaCreateSerializer, CampaignPricingRuleSerializer,\
     CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer
 from .services.campaign_pricing_service import CampaignPricingService
-from accounts.permissions import IsClientOrAdmin
-
+from ..core.permissions import IsClientUser, IsOwnerOrAdmin
+from ..vehicles.models import VehicleType
 
 
 class CampaignViewSet(ModelViewSet):
+    permission_classes = [IsClientUser,]
     serializer_class = CampaignSerializer
 
     def get_queryset(self):
@@ -27,6 +28,7 @@ class CampaignViewSet(ModelViewSet):
 
 
 class CampaignSettingViewSet(ModelViewSet):
+    permission_classes = [IsClientUser,]
     serializer_class = CampaignSettingSerializer
     queryset = CampaignSetting.objects.all() # یا فیلتر شده بر اساس campaign
 
@@ -48,11 +50,13 @@ class CampaignSettingViewSet(ModelViewSet):
 
 
 class TemplateViewSet(ModelViewSet):
+    permission_classes = [IsOwnerOrAdmin,]
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
 
 
 class CampaignDesignViewSet(ModelViewSet):
+    permission_classes = [IsClientUser,]
     queryset = CampaignDesign.objects.select_related(
         'campaign',
         'template'
@@ -71,7 +75,7 @@ class CampaignDesignViewSet(ModelViewSet):
 
 
 class CampaignAreaViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsClientUser,]
 
     def get_queryset(self):
         user = self.request.user.client_profile
@@ -165,6 +169,8 @@ class CampaignAreaViewSet(ModelViewSet):
 
 
 class CampaignPricingRuleViewSet(ModelViewSet):
+    permission_classes = [IsOwnerOrAdmin,]
+
     queryset = CampaignPricingRule.objects.all().order_by("key")
     serializer_class = CampaignPricingRuleSerializer
     permission_classes = [IsAdminUser]
@@ -175,7 +181,7 @@ class CampaignPricingRuleViewSet(ModelViewSet):
 
 
 class CampaignCostViewSet(ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsClientUser,]
 
     @action(detail=True, methods=["post"], url_path="calculate-cost")
     def calculate_cost(self, request, pk=None):
@@ -223,7 +229,7 @@ class CampaignCostViewSet(ViewSet):
 
 class CampaignInvoiceViewSet(ModelViewSet):
     queryset = CampaignInvoice.objects.all()
-    permission_classes = [IsClientOrAdmin]
+    permission_classes = [IsOwnerOrAdmin,]
 
     def get_serializer_class(self):
         if self.action == 'create':

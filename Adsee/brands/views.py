@@ -1,13 +1,11 @@
 from rest_framework import viewsets, permissions
 from .models import Brand
 from .serializers import BrandListSerializer, BrandDetailSerializer
+from ..core.permissions import IsClientUser
 
-class IsClient(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and hasattr(request.user, 'client_profile')
 
 class BrandViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsClient]
+    permission_classes = [IsClientUser]
 
     def get_serializer_class(self):
         if self.action == 'list':

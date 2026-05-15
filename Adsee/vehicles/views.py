@@ -5,22 +5,17 @@ from .serializers import (
     VehicleListSerializer,
     VehicleDetailSerializer,
 )
+from ..core.permissions import IsAdminOrReadOnly, IsDriverUser
 
-
-class IsAdminOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return request.user.is_authenticated
-        return request.user.is_staff
 
 class VehicleTypeViewSet(viewsets.ModelViewSet):
     queryset = VehicleType.objects.filter(is_active=True)
     serializer_class = VehicleTypeSerializer
-    permission_classes = [IsAdminOrReadOnly]    # همه کاربران می‌تونن ببینن، فقط ادمین تغییر بده
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class VehicleViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsDriverUser]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -28,7 +23,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
         return VehicleDetailSerializer
 
     def get_queryset(self):
-        user = self.request.user
+        user = self.request.user.driver_profile
         if user.is_staff:
             return Vehicle.objects.all()
         return Vehicle.objects.filter(driver=user)
