@@ -14,6 +14,9 @@ GDAL_LIBRARY_PATH = r"C:\Program Files\QGISQT6 3.40.15\bin\gdal312.dll"
 
 GEOS_LIBRARY_PATH = r"C:\Program Files\QGISQT6 3.40.15\bin\geos_c.dll"
 
+# EXTERNAL API
+ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL")
+ANALYTICS_API_KEY = os.getenv("ANALYTICS_API_KEY")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

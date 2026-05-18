@@ -39,10 +39,12 @@ class CampaignSerializer(serializers.ModelSerializer):
             'end_date',
             'status',
             'is_deleted',
+            'start_date',
+            'end_date',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['client', 'is_deleted', 'created_at', 'updated_at']
+        read_only_fields = ['client', 'is_deleted', 'created_at', 'updated_at', 'start_date', 'end_date']
 
     def validate(self, attrs):
         start_date = attrs.get('start_date', getattr(self.instance, 'start_date', None))

@@ -12,6 +12,8 @@ from .serializers import (
 from campaigns.models import Campaign
 from campaigns.serializers import CampaignBriefSerializer
 from permissions import IsDriverUser
+import logging
+logger = logging.getLogger(__name__)
 
 class TripViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsDriverUser]
@@ -128,4 +130,35 @@ class TripViewSet(viewsets.ModelViewSet):
         trip.status = Trip.Status.CANCELLED
         trip.end_time = timezone.now()
         trip.save()
+        return Response(TripDetailSerializer(trip).data)
+
+    @action(detail=True, methods=['patch'])
+    def complete(self, request, pk=None):
+        trip = self.get_object()
+        if trip.driver.user_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if trip.status not in [Trip.Status.ACTIVE, Trip.Status.PAUSED]:
+            return Response({"error": "..."}, status=status.HTTP_400_BAD_REQUEST)
+
+        trip.status = Trip.Status.COMPLETED
+        trip.end_time = timezone.now()
+        trip.save()
+
+        # فراخوانی سرویس خارجی برای محاسبه درآمد
+        try:
+            from services.analytics_client import AnalyticsServiceClient
+            client = AnalyticsServiceClient()
+            start_ts = int(trip.start_time.timestamp())
+            end_ts = int(trip.end_time.timestamp())
+            result = client.calculate_earnings(
+                vehicle_id=trip.vehicle.plate_number,
+                start_ts=start_ts,
+                end_ts=end_ts
+            )
+            trip.earnings = result.get("earnings", 0)
+            trip.save(update_fields=["earnings"])
+        except Exception as e:
+            # در صورت خطا، لاگ کن و ادامه بده (درآمد صفر می‌ماند)
+            logger.error(f"Earnings fetch failed for trip {trip.id}: {e}")
+
         return Response(TripDetailSerializer(trip).data)

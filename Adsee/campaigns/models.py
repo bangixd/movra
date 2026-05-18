@@ -40,6 +40,9 @@ class Campaign(models.Model):
 
     is_deleted = models.BooleanField(default=False)
 
+    start_date = models.DateField(auto_now_add=True)
+    end_date = models.DateField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
