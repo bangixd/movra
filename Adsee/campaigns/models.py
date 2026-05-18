@@ -58,7 +58,7 @@ class Campaign(models.Model):
 
 
 class CampaignSetting(models.Model):
-    campaign = models.ForeignKey('Campaign', on_delete=models.CASCADE, related_name='setting')
+    campaign = models.OneToOneField('Campaign', on_delete=models.CASCADE, related_name='setting')
 
     active_days = models.PositiveIntegerField()
     activity_hours_per_day = models.TimeField()

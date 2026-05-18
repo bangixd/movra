@@ -42,6 +42,10 @@ class UserDetailAPIView(APIView):
 
 
 class RequestOTPView(APIView):
+    """
+    api برای درخواست کد احراز هویت
+    برای ایجاد کاربر جدید به هنگام درخواست کد
+    """
     serializer_class = OTPRequestSerializer
     throttle_classes = [AnonRateThrottle]
     throttle_scope = 'otp_request'

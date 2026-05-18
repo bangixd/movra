@@ -4,7 +4,7 @@ from .views import CampaignDesignViewSet, CampaignViewSet, CampaignSettingViewSe
     CampaignPricingRuleViewSet, CampaignCostViewSet, CampaignInvoiceViewSet
 
 router = DefaultRouter()
-router.register(r'campaign', CampaignViewSet, basename='campaign')
+router.register(r'', CampaignViewSet, basename='campaign')
 router.register(r'campaign-setting', CampaignSettingViewSet, basename='campaign-setting')
 router.register(r'templates', TemplateViewSet, basename='templates')
 router.register(r'campaign-designs', CampaignDesignViewSet, basename='campaign-designs')

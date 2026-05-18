@@ -28,7 +28,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
             return Vehicle.objects.none()
         if user.is_staff:
             return Vehicle.objects.all()
-        return Vehicle.objects.filter(driver=user)
+        return Vehicle.objects.filter(driver=user.driver_profile)
 
     def perform_create(self, serializer):
         serializer.save(driver=self.request.user)

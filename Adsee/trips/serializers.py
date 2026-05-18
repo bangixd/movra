@@ -16,28 +16,28 @@ class TripCreateSerializer(serializers.ModelSerializer):
     def validate_campaign(self, campaign):
         user = self.context['request'].user
         now = timezone.now()
-        if campaign.status != 'PUBLISHED':
+        if campaign.status != Campaign.Status.ACTIVE:
             raise serializers.ValidationError("این کمپین در حال حاضر فعال نیست.")
-        if campaign.start_date and campaign.start_date > now:
+        if campaign.start_date and campaign.start_date > now.date():
             raise serializers.ValidationError("کمپین هنوز شروع نشده است.")
-        if campaign.end_date and campaign.end_date < now:
+        if campaign.end_date and campaign.end_date < now.date():
             raise serializers.ValidationError("کمپین به پایان رسیده است.")
         # چک ظرفیت
         active_count = Trip.objects.filter(
             campaign=campaign
         ).exclude(status__in=[Trip.Status.COMPLETED, Trip.Status.CANCELLED]).count()
-        if campaign.max_drivers and active_count >= campaign.max_drivers:
+        if campaign.setting.max_driver and active_count >= campaign.setting.max_driver:
             raise serializers.ValidationError("ظرفیت راننده‌های این کمپین تکمیل شده است.")
         return campaign
 
     def validate_vehicle(self, vehicle):
         user = self.context['request'].user
-        if vehicle.driver != user:
+        if vehicle.driver != user.driver_profile:
             raise serializers.ValidationError("این خودرو متعلق به شما نیست.")
         return vehicle
 
     def create(self, validated_data):
-        validated_data['driver'] = self.context['request'].user
+        validated_data['driver'] = self.context['request'].user.driver_profile
         return super().create(validated_data)
 
 

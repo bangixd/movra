@@ -32,7 +32,6 @@ class BrandAPITest(TestCase):
 
     def test_create_brand(self):
         response = self.api.post('/api/brands/brands/', {'name': 'NewBrand', 'slug': 'new-brand'})
-        print(response.status_code, response.data)  # ← اضافه کنید
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Brand.objects.count(), 1)
         self.assertEqual(Brand.objects.first().client, self.client_profile)

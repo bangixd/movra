@@ -7,7 +7,8 @@ from brands.models import Brand
 from vehicles.models import VehicleType, Vehicle
 from campaigns.models import Campaign, CampaignSetting
 from geo.models import City
-from .models import Trip
+from trips.models import Trip
+from django.contrib.gis.geos import Point, Polygon
 
 
 class TripModelTest(TestCase):
@@ -33,12 +34,14 @@ class TripModelTest(TestCase):
             driver=self.other_driver, vehicle_type=self.vehicle_type,
             plate_number='98X765Y43', banner_max_width_cm=100, banner_max_height_cm=50
         )
-        # تنظیمات کمپین
+        # 🔧 ساخت CampaignSetting و تزریق مستقیم به campaign برای تست clean
         self.campaign_setting = CampaignSetting.objects.create(
             campaign=self.campaign, active_days=5,
             activity_hours_per_day='08:00:00', max_driver=2,
             vehicle_type=self.vehicle_type
         )
+        # ⚠️ با این کار campaign.setting به این آبجکت اشاره می‌کند (دور زدن مشکل FK)
+        self.campaign.setting = self.campaign_setting
 
     def test_create_trip_with_valid_constraints(self):
         trip = Trip.objects.create(
@@ -69,6 +72,7 @@ class TripModelTest(TestCase):
         with self.assertRaises(Exception):
             Trip.objects.create(driver=third_driver, campaign=self.campaign, vehicle=third_vehicle, status=Trip.Status.ACTIVE)
 
+
 class TripAPITest(TestCase):
     def setUp(self):
         # ساخت داده‌های مشابه بالا
@@ -92,6 +96,15 @@ class TripAPITest(TestCase):
             activity_hours_per_day='08:00:00', max_driver=2,
             vehicle_type=self.vehicle_type
         )
+        # 🔧 باز هم campaign.setting را تزریق می‌کنیم
+        self.campaign.setting = self.campaign_setting
+
+        # 🔧 شهر با مرکز معتبر
+        self.city = City.objects.create(
+            name='Tehran',
+            center=Point(51.38, 35.68, srid=4326)   # مختصات الزامی است
+        )
+
         self.api = APIClient()
         self.api.force_authenticate(user=self.driver_user)
 
@@ -112,10 +125,14 @@ class TripAPITest(TestCase):
         self.assertEqual(trip.status, Trip.Status.ACTIVE)
 
     def test_available_campaigns_city_filter(self):
-        # ایجاد شهر و انتساب به کمپین
-        city = City.objects.create(name='Tehran', center=None)  # مرکز مهم نیست
+        # یک CampaignArea برای کمپین می‌سازیم
         from campaigns.models import CampaignArea
-        CampaignArea.objects.create(campaign=self.campaign, area_type=CampaignArea.AreaType.FREE_AREA, city=city, region_polygon=None)
-        response = self.api.get(f'/api/trips/available-campaigns/?city_id={city.id}')
+        CampaignArea.objects.create(
+            campaign=self.campaign,
+            area_type=CampaignArea.AreaType.FREE_AREA,
+            city=self.city,
+            region_polygon=Polygon(((0,0), (0,1), (1,1), (1,0), (0,0)), srid=4326)
+        )
+        response = self.api.get(f'/api/trips/available-campaigns/?city_id={self.city.id}')
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], self.campaign.id)

@@ -36,5 +36,5 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['driver', 'created_at', 'updated_at']
 
     def create(self, validated_data):
-        validated_data['driver'] = self.context['request'].user
+        validated_data['driver'] = self.context['request'].user.driver_profile
         return super().create(validated_data)

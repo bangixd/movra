@@ -14,7 +14,9 @@ class Trip(models.Model):
     driver = models.ForeignKey(
         DriverProfile,
         on_delete=models.CASCADE,
-        related_name='trips'
+        related_name='trips',
+        null=True,
+        blank=True,
     )
     campaign = models.ForeignKey(
         'campaigns.Campaign',
@@ -24,7 +26,9 @@ class Trip(models.Model):
     vehicle = models.ForeignKey(
         'vehicles.Vehicle',
         on_delete=models.PROTECT,
-        related_name='trips'
+        related_name='trips',
+        null=True,
+        blank=True,
     )
 
     status = models.CharField(
@@ -37,17 +41,19 @@ class Trip(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
 
     # آمار نهایی (ممکن است بعداً توسط API خارجی پر شود)
-    total_active_seconds = models.PositiveIntegerField(default=0)
-    total_distance_km = models.FloatField(default=0.0)
+    total_active_seconds = models.PositiveIntegerField(default=0, null=True ,blank=True)
+    total_distance_km = models.FloatField(default=0.0, null=True ,blank=True)
     earnings = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0,
-        help_text="درآمد محاسبه‌شده توسط سرویس خارجی"
+        help_text="درآمد محاسبه‌شده توسط سرویس خارجی",
+        null=True,
+        blank=True,
     )
 
     # اسنپ‌شات تنظیمات کمپین و خودرو در لحظه‌ی ایجاد
-    snapshot = models.JSONField(default=dict)
+    snapshot = models.JSONField(default=dict, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -90,16 +96,20 @@ class Trip(models.Model):
             ).exclude(
                 status__in=[self.Status.COMPLETED, self.Status.CANCELLED]
             ).exclude(pk=self.pk).count()
-            if self.campaign.setting.max_drivers and active_trips_count >= self.campaign.setting.max_drivers:
+            if self.campaign.setting.max_driver and active_trips_count >= self.campaign.setting.max_driver:
                 raise ValidationError("ظرفیت راننده‌های این کمپین تکمیل شده است.")
 
     def save(self, *args, **kwargs):
+
+        if not kwargs.pop('skip_clean', False):
+            self.full_clean()
+
         if self._state.adding:  # فقط هنگام ایجاد اولیه
             # اسنپ‌شات از اطلاعات ضروری
             self.snapshot = {
                 'campaign': {
                     'id': self.campaign_id,
-                    'title': self.campaign.title,
+                    'title': self.campaign.slogan,
                     'start_date': str(self.campaign.start_date),
                     'end_date': str(self.campaign.end_date),
                 },
