@@ -39,9 +39,9 @@ class TripViewSet(viewsets.ModelViewSet):
         now = timezone.now()
         campaigns = Campaign.objects.filter(
             status=Campaign.Status.ACTIVE,
-            start_date__lte=now.date(),
-            end_date__gte=now.date()
+            created_at__lte=now,
         )
+        print("Found campaigns:", campaigns.count())
         city_id = request.query_params.get('city_id')
         if city_id:
             try:
@@ -49,8 +49,8 @@ class TripViewSet(viewsets.ModelViewSet):
             except (TypeError, ValueError):
                 return Response({"error": "city_id نامعتبر است."},
                                 status=status.HTTP_400_BAD_REQUEST)
-            campaigns = campaigns.filter(area__city_id=city_id)
-
+            campaigns = campaigns.filter(area__city__id=city_id)
+            print(campaigns, city_id)
         serializer = CampaignBriefSerializer(campaigns, many=True)
         return Response(serializer.data)
 

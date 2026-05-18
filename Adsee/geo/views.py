@@ -72,7 +72,7 @@ class DriverLocationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         active_trip = Trip.objects.filter(
-            driver=self.request.user
+            driver=self.request.user.driver_profile
         ).exclude(
             status__in=[Trip.Status.COMPLETED, Trip.Status.CANCELLED]
         ).first()

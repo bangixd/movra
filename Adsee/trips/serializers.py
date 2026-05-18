@@ -3,6 +3,8 @@ from .models import Trip
 from campaigns.models import Campaign
 from vehicles.models import Vehicle
 from django.utils import timezone
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 
 
 class TripCreateSerializer(serializers.ModelSerializer):
@@ -11,17 +13,17 @@ class TripCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Trip
-        fields = ['campaign', 'vehicle']
+        fields = ['id', 'campaign', 'vehicle']
 
     def validate_campaign(self, campaign):
         user = self.context['request'].user
         now = timezone.now()
         if campaign.status != Campaign.Status.ACTIVE:
             raise serializers.ValidationError("این کمپین در حال حاضر فعال نیست.")
-        if campaign.start_date and campaign.start_date > now.date():
+        if campaign.created_at and campaign.created_at > now:
             raise serializers.ValidationError("کمپین هنوز شروع نشده است.")
-        if campaign.end_date and campaign.end_date < now.date():
-            raise serializers.ValidationError("کمپین به پایان رسیده است.")
+        # if campaign.end_date and campaign.end_date < now:
+        #     raise serializers.ValidationError("کمپین به پایان رسیده است.")
         # چک ظرفیت
         active_count = Trip.objects.filter(
             campaign=campaign
@@ -38,7 +40,10 @@ class TripCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['driver'] = self.context['request'].user.driver_profile
-        return super().create(validated_data)
+        try:
+            return super().create(validated_data)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
 
 
 class TripStatusUpdateSerializer(serializers.ModelSerializer):
