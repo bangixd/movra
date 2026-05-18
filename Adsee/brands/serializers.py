@@ -18,5 +18,5 @@ class BrandDetailSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # کلاینت از کاربر لاگین‌شده پر می‌شود
-        validated_data['client'] = self.context['request'].user
+        validated_data['client'] = self.context['request'].user.client_profile
         return super().create(validated_data)

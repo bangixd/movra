@@ -8,10 +8,10 @@ router.register(r'driver-profiles', DriverProfileViewSet, basename='driverprofil
 router.register(r'client-profiles', ClientProfileViewSet, basename='clientprofile')
 
 urlpatterns = [
-    path("api/auth/request-otp/", RequestOTPView.as_view(), name="request_otp"),
-    path("api/auth/verify-otp/", VerifyOTPView.as_view(), name="verify_otp"),
+    path("auth/request-otp/", RequestOTPView.as_view(), name="request_otp"),
+    path("auth/verify-otp/", VerifyOTPView.as_view(), name="verify_otp"),
 
-    path('api/user/', UserDetailAPIView.as_view(), name='user_detail'),
+    path('user/', UserDetailAPIView.as_view(), name='user_detail'),
 
     path('', include(router.urls)),
 

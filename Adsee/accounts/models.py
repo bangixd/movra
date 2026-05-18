@@ -108,7 +108,9 @@ class DriverProfile(models.Model):
     vehicle_type = models.ForeignKey(
         "vehicles.VehicleType",
         on_delete=models.PROTECT,
-        related_name="drivers"
+        related_name="drivers",
+        null=True,
+        blank=True
     )
 
     # ---------- موقعیت و تنظیمات موقعیت ----------

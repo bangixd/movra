@@ -9,7 +9,7 @@ class Brand(models.Model):
     )
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=250, unique=True, allow_unicode=True)
-    logo = models.ImageField(upload_to='brands/logos/')
+    logo = models.ImageField(upload_to='brands/logos/', blank=True)
     description = models.TextField(blank=True)
     website = models.URLField(blank=True)
     is_active = models.BooleanField(default=True)

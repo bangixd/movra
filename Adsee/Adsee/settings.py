@@ -54,11 +54,11 @@ INSTALLED_APPS = [
 
     # My apps
     "accounts.apps.AccountsConfig",
-    "brands.apps.BrandsConfig",
-    "campaigns.apps.CampaignsConfig",
-    "vehicles.apps.VehiclesConfig",
-    "geo.apps.GeoConfig",
-    "trips.apps.TripsConfig",
+    "brands",
+    "campaigns",
+    "vehicles",
+    "geo",
+    "trips",
 
 
 ]
@@ -100,12 +100,19 @@ WSGI_APPLICATION = 'Adsee.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django.contrib.gis.db.backends.postgis",
         "NAME": os.getenv("DB_NAME"),
         "USER": os.getenv("DB_USER"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST"),
         "PORT": os.getenv("DB_PORT"),
+        'TEST': {
+            'TEMPLATE': 'template0',
+            'CREATE_DB': True,
+            'CREATE_USER': True,
+            'CHARSET': 'UTF8',
+            'EXTENSIONS': ['postgis'],
+        },
     }
 }
 
@@ -156,6 +163,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         'rest_framework.authentication.SessionAuthentication', # debug mode
+        # 'rest_framework.authentication.SessionAuthentication', # debug mode
 
     ),
     "DEFAULT_PERMISSION_CLASSES": (

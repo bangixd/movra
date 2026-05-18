@@ -42,9 +42,9 @@ urlpatterns = [
 
     path('api/campaigns/', include('campaigns.urls')),
     path('api/geo/', include('geo.urls')),
-    path('api/vehicle/', include('vehicles.urls')),
-    path('api/brand/', include('brands.urls')),
-    path('api/trip/', include('trips.urls')),
+    path('api/vehicles/', include('vehicles.urls')),
+    path('api/brands/', include('brands.urls')),
+    path('api/trips/', include('trips.urls')),
 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

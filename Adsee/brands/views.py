@@ -17,8 +17,7 @@ class BrandViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return Brand.objects.none()
-        return Brand.objects.filter(client=user)
+        return Brand.objects.filter(client=self.request.user.client_profile)
 
     def perform_create(self, serializer):
-        # client بطور خودکار توی serializer ست می‌شود
-        serializer.save()
+        serializer.save(client=self.request.user.client_profile)
