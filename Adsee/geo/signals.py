@@ -1,37 +1,29 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import DriverLocation
-from services.analytics_client import AnalyticsServiceClient
+from geo.models import DriverLocation
 import logging
+from services.tasks import forward_location_to_analytics_task
 
 logger = logging.getLogger(__name__)
+
 
 @receiver(post_save, sender=DriverLocation)
 def forward_location_to_analytics(sender, instance, created, **kwargs):
     if not created or not instance.trip_id:
         return
 
-    try:
-        trip = instance.trip
-        vehicle = trip.vehicle
-        campaign = trip.campaign
+    trip = instance.trip
+    vehicle = trip.vehicle
+    campaign = trip.campaign
 
-        client = AnalyticsServiceClient()
-        lat = instance.point.y
-        lon = instance.point.x
-        ts = int(instance.timestamp.timestamp())
-
-        client.send_single_location(
-            vehicle_id=vehicle.plate_number,
-            vehicle_display_name=str(vehicle),
-            campaign_id=str(campaign.id),
-            session_id=str(trip.id),
-            lat=lat,
-            lon=lon,
-            speed=0,      # اگر در DriverLocation سرعت ندارید، ۰ بفرستید
-            heading=0,
-            timestamp=ts
-        )
-        logger.info(f"Location forwarded for trip {trip.id}")
-    except Exception as e:
-        logger.error(f"Failed to forward location: {e}")
+    forward_location_to_analytics_task.delay(
+        driver_id=instance.driver_id,
+        trip_id=trip.id,
+        vehicle_plate=vehicle.plate_number,
+        campaign_id=campaign.id,
+        lat=instance.point.y,
+        lon=instance.point.x,
+        speed=0,
+        heading=0,
+        timestamp=int(instance.timestamp.timestamp())
+    )

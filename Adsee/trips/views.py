@@ -12,6 +12,7 @@ from .serializers import (
 from campaigns.models import Campaign
 from campaigns.serializers import CampaignBriefSerializer
 from permissions import IsDriverUser
+from services.tasks import update_earnings_task
 import logging
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,10 @@ class TripViewSet(viewsets.ModelViewSet):
         trip.status = Trip.Status.COMPLETED
         trip.end_time = timezone.now()
         trip.save()
+
+        # آغاز تسک Celery برای محاسبه درآمد (پاسخ فوراً برمی‌گردد)
+        update_earnings_task.delay(trip.id)
+
         return Response(TripDetailSerializer(trip).data)
 
     @action(detail=True, methods=['patch'])
