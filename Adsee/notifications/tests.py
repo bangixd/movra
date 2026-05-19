@@ -1,11 +1,12 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
+from rest_framework import status
 from accounts.models import User
 from notifications.models import Notification
-from campaigns.models import Campaign, CampaignDesign
+from campaigns.models import Campaign, CampaignDesign, Template
 from brands.models import Brand
 from accounts.models import ClientProfile
-from printshop.models import PrintShopProfile
+from print_shops.models import PrintShopProfile
 
 class NotificationModelTest(TestCase):
     def setUp(self):
@@ -18,7 +19,7 @@ class NotificationModelTest(TestCase):
 
     def test_notification_creation(self):
         self.assertFalse(self.notification.is_read)
-        self.assertEqual(str(self.notification), self.notification.message[:50])  # اختیاری
+        self.assertEqual(self.notification.message, 'کمپین جدید')
 
 class NotificationSignalTest(TestCase):
     def setUp(self):
@@ -56,9 +57,11 @@ class NotificationSignalTest(TestCase):
             status=Campaign.Status.ACTIVE
         )
         # طراحی با print_shop اختصاص‌یافته باید اعلان بسازد
+        template = Template.objects.create(name='Test Template', variant='test')
         design = CampaignDesign.objects.create(
             campaign=campaign,
             design_type=CampaignDesign.DesignType.DEFAULT_TEMPLATE,
+            template=template,
             print_shop=self.print_shop,
             print_status='PENDING'
         )
@@ -87,6 +90,9 @@ class NotificationAPITest(TestCase):
 
     def test_mark_notification_read(self):
         response = self.api.post(f'/api/notifications/{self.notification.id}/read/')
+        # اول مطمئن شو که درخواست موفق بوده
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # حالا شیء را از نو بخوان
         self.notification.refresh_from_db()
         self.assertTrue(self.notification.is_read)
 
