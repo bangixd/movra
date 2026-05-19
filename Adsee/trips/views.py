@@ -144,9 +144,8 @@ class TripViewSet(viewsets.ModelViewSet):
         trip.end_time = timezone.now()
         trip.save()
 
-        # فراخوانی سرویس خارجی برای محاسبه درآمد
+        # محاسبه درآمد از سرویس خارجی
         try:
-            from services.analytics_client import AnalyticsServiceClient
             client = AnalyticsServiceClient()
             start_ts = int(trip.start_time.timestamp())
             end_ts = int(trip.end_time.timestamp())
@@ -158,7 +157,7 @@ class TripViewSet(viewsets.ModelViewSet):
             trip.earnings = result.get("earnings", 0)
             trip.save(update_fields=["earnings"])
         except Exception as e:
-            # در صورت خطا، لاگ کن و ادامه بده (درآمد صفر می‌ماند)
-            logger.error(f"Earnings fetch failed for trip {trip.id}: {e}")
+            logger.error(f"Earnings calculation failed for trip {trip.id}: {e}")
+            # در صورت خطا، earnings صفر می‌ماند اما سفر کامل شده است
 
         return Response(TripDetailSerializer(trip).data)
