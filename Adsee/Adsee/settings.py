@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "geo",
     "trips",
     "print_shops",
+    "notifications",
 
 ]
 
