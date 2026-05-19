@@ -3,8 +3,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from .models import Notification
 from campaigns.models import Campaign, CampaignDesign
-
-User = settings.AUTH_USER_MODEL
+from accounts.models import User
 
 @receiver(post_save, sender=Campaign)
 def notify_drivers_new_campaign(sender, instance, created, **kwargs):

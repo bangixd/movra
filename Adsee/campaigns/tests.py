@@ -9,6 +9,7 @@ from .models import (
     Campaign, CampaignSetting, CampaignDesign, CampaignArea,
     CampaignCost, CampaignCostItem, CampaignInvoice
 )
+from print_shops.models import PrintShopProfile
 
 class CampaignModelTest(TestCase):
     def setUp(self):
@@ -67,3 +68,16 @@ class CampaignModelTest(TestCase):
             snapshot={'extra': 'data'}
         )
         self.assertEqual(invoice.snapshot['extra'], 'data')
+
+    def test_design_print_assignment(self):
+        print_user = User.objects.create_user(phone='09120009999', role=User.Role.PRINT_SHOP)
+        shop = PrintShopProfile.objects.create(user=print_user, shop_name='چاپ سریع', address='...', phone='021')
+        design = CampaignDesign.objects.create(
+            campaign=self.campaign,
+            design_type=CampaignDesign.DesignType.DEFAULT_TEMPLATE,
+            print_shop=shop,
+            print_status='ACCEPTED',
+            estimated_ready_date=timezone.now() + timedelta(days=1)
+        )
+        self.assertEqual(design.print_shop, shop)
+        self.assertEqual(design.print_status, 'ACCEPTED')

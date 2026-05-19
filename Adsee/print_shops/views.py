@@ -3,7 +3,7 @@ from .models import PrintShopProfile
 from .serializers import PrintShopProfileSerializer
 from campaigns.models import CampaignDesign
 from campaigns.serializers import CampaignDesignSerializer
-from permissions import IsOwnerOrAdmin
+from permissions import IsOwnerOrAdmin, IsPrintShopUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,7 +12,7 @@ from campaigns.models import CampaignDesign
 
 class PrintShopProfileViewSet(viewsets.ModelViewSet):
     serializer_class = PrintShopProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsPrintShopUser]
 
     def get_queryset(self):
         if self.request.user.is_staff:

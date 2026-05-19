@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from accounts.models import User
 
 
 class IsClientUser(permissions.BasePermission):
@@ -53,3 +54,12 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return request.user.is_authenticated
         return request.user.is_staff
+
+
+class IsPrintShopUser(permissions.BasePermission):
+    """اجازه فقط به کاربران دارای نقش PRINT_SHOP یا ادمین"""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.is_staff or
+            getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
+        )
