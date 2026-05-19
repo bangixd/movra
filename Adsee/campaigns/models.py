@@ -129,6 +129,26 @@ class CampaignDesign(models.Model):
         default=DesignStatus.PENDING
     )
 
+    print_shop = models.ForeignKey(
+        'print_shops.PrintShopProfile',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_designs'
+    )
+    print_status = models.CharField(
+        max_length=30,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('ACCEPTED', 'Accepted'),
+            ('IN_PROGRESS', 'In Progress'),
+            ('READY', 'Ready for Pickup'),
+            ('DELIVERED', 'Delivered'),
+            ('REJECTED', 'Rejected')
+        ],
+        default='PENDING'
+    )
+    estimated_ready_date = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

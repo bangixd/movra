@@ -74,8 +74,22 @@ class TripDetailSerializer(serializers.ModelSerializer):
     vehicle_plate = serializers.CharField(source='vehicle.plate_number', read_only=True)
     vehicle_type = serializers.CharField(source='vehicle.vehicle_type.name', read_only=True)
     hourly_rate = serializers.DecimalField(source='vehicle.hourly_rate', max_digits=10, decimal_places=2, read_only=True)
+    print_shop_name = serializers.CharField(
+        source='campaign.design.print_shop.shop_name',
+        read_only=True, allow_null=True
+    )
+    print_shop_address = serializers.CharField(
+        source='campaign.design.print_shop.address',
+        read_only=True, allow_null=True
+    )
+    print_shop_phone = serializers.CharField(
+        source='campaign.design.print_shop.phone',
+        read_only=True, allow_null=True
+    )
+
 
     class Meta:
         model = Trip
         fields = '__all__'
-        read_only_fields = ['driver', 'snapshot', 'created_at', 'updated_at']
+        read_only_fields = ['driver', 'snapshot', 'created_at', 'updated_at',
+                            'print_shop_name', 'print_shop_address', 'print_shop_phone',]

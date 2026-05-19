@@ -62,7 +62,7 @@ INSTALLED_APPS = [
     "vehicles",
     "geo",
     "trips",
-
+    "print_shops",
 
 ]
 

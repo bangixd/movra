@@ -7,6 +7,7 @@ from geo.models import City, Neighborhood, SuggestedRoute
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryField
 from .utils import generate_invoice_number
 from django.utils import timezone
+from print_shops.serializers import PrintShopProfileSerializer
 
 
 class BrandMiniSerializer(serializers.ModelSerializer):
@@ -140,6 +141,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class CampaignDesignSerializer(serializers.ModelSerializer):
+    print_shop_detail = PrintShopProfileSerializer(source='print_shop', read_only=True)
     template_detail = TemplateSerializer(source='template', read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
 
@@ -159,12 +161,16 @@ class CampaignDesignSerializer(serializers.ModelSerializer):
             'product_images',
             'created_at',
             'updated_at',
+            'print_shop', 'print_shop_detail',
+            'print_status', 'estimated_ready_date',
         ]
         read_only_fields = [
             'id',
             'created_at',
             'updated_at',
             'product_images',
+            'print_status',
+            'estimated_ready_date'
         ]
 
 
