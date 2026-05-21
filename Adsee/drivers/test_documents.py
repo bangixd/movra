@@ -3,6 +3,8 @@ from rest_framework.test import APIClient
 from accounts.models import User
 from drivers.models import DriverProfile, DriverDocument
 from vehicles.models import VehicleType
+from unittest.mock import patch
+from services.tasks import process_driver_document
 
 class DriverDocumentAPITest(TestCase):
     def setUp(self):
@@ -10,8 +12,9 @@ class DriverDocumentAPITest(TestCase):
         self.driver_user = User.objects.create_user(phone='09120001122', role=User.Role.DRIVER)
         self.admin = User.objects.create_superuser(phone='09990000000', password='admin')
         self.vehicle_type = VehicleType.objects.create(name='Sedan', base_hourly_rate=50000)
+        self.driver_user = User.objects.create_user(phone='09120001122', role=User.Role.DRIVER)
+        DriverProfile.objects.create(user=self.driver_user, full_name='Ali', national_id='1234567890')
         # ساخت پروفایل راننده (ضروری برای سیگنال)
-        DriverProfile.objects.create(user=self.driver_user, full_name='Ali', national_id='1234567890', vehicle_type=self.vehicle_type)
         self.api = APIClient()
         self.api.force_authenticate(user=self.driver_user)
         print("✅ Driver & admin ready")
@@ -58,3 +61,15 @@ class DriverDocumentAPITest(TestCase):
         }, format='multipart')
         self.assertEqual(response.status_code, 403)
         print("✅ Non-driver blocked")
+
+
+    @patch('services.tasks.process_driver_document.delay')
+    def test_celery_task_called_on_upload(self, mock_delay):
+        doc = DriverDocument.objects.create(
+            user=self.driver_user,
+            document_type='NATIONAL_ID_FRONT',
+            file='drivers/documents/test.jpg'
+        )
+        self.assertTrue(mock_delay.called)
+        mock_delay.assert_called_with(doc.id)
+

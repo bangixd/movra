@@ -74,6 +74,7 @@ class DriverDocument(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reject_reason = models.TextField(blank=True)
+    processed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.phone} - {self.document_type}"
