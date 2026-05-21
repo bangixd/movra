@@ -35,11 +35,13 @@ class AnalyticsServiceClient:
         resp.raise_for_status()
         return resp.json()
 
-    def register_vehicle(self, vehicle_id: str, vehicle_display_name: str = ""):
+    def register_vehicle(self, vehicle_id: str, vehicle_display_name: str = "", **extra_fields):
         """ ثبت یک خودروی جدید در سرویس خارجی """
         payload = {
             "vehicle_id": vehicle_id,
-            "vehicle_display_name": vehicle_display_name or vehicle_id
+            "vehicle_display_name": vehicle_display_name or vehicle_id,
+            **extra_fields
+
         }
         try:
             resp = requests.post(

@@ -1,11 +1,9 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from geo.models import DriverLocation
-import logging
+from .models import DriverLocation
 from services.tasks import forward_location_to_analytics_task
-
-logger = logging.getLogger(__name__)
-
+from trips.models import Trip
+from campaigns.models import Campaign
 
 @receiver(post_save, sender=DriverLocation)
 def forward_location_to_analytics(sender, instance, created, **kwargs):
@@ -13,6 +11,11 @@ def forward_location_to_analytics(sender, instance, created, **kwargs):
         return
 
     trip = instance.trip
+    if trip.status != Trip.Status.ACTIVE:  # فقط در حال حرکت
+        return
+    if trip.campaign.status != Campaign.Status.ACTIVE:
+        return
+
     vehicle = trip.vehicle
     campaign = trip.campaign
 
