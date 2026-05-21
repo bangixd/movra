@@ -92,3 +92,17 @@ class AnalyticsServiceClient:
         )
         resp.raise_for_status()
         return resp.json()   # {"earnings": 12345.67}
+
+    def send_batch_locations(self, points: list):
+        """
+        ارسال دسته‌ای GPS
+        points: لیست دیکشنری‌های حاوی vehicle_id, campaign_id, session_id, lat, lon, speed, heading, timestamp
+        """
+        resp = requests.post(
+            f"{self.base_url}/gps-points/batch",
+            json=points,
+            headers=self._headers(),
+            timeout=10
+        )
+        resp.raise_for_status()
+        return resp.json()

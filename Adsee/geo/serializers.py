@@ -82,3 +82,15 @@ class DriverLocationReadSerializer(serializers.ModelSerializer):
         model = DriverLocation
         fields = ['id', 'driver', 'driver_name', 'trip', 'point', 'timestamp']
         read_only_fields = fields
+
+
+class BatchLocationSerializer(serializers.Serializer):
+    trip_id = serializers.IntegerField(required=True)
+    points = serializers.ListField(
+        child=serializers.DictField(
+            child=serializers.FloatField(),
+            allow_empty=False
+        ),
+        allow_empty=False,
+        help_text="لیست نقاط به فرمت [{'lat':..., 'lon':..., 'timestamp':..., 'speed':..., 'heading':...}, ...]"
+    )

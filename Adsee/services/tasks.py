@@ -120,3 +120,27 @@ def update_earnings_task(self, trip_id):
     except Exception as exc:
         logger.error(f"Earnings update failed for trip {trip_id}: {exc}")
         # در صورت شکست نهایی، می‌توان دوباره تلاش کرد یا earnings صفر ماند
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def forward_batch_locations_task(self, trip_id, vehicle_plate, campaign_id, points):
+    """ارسال دسته‌ای نقاط به سرویس Analytics"""
+    client = AnalyticsServiceClient()
+    batch_payload = []
+    for p in points:
+        batch_payload.append({
+            "vehicle_id": vehicle_plate,
+            "campaign_id": str(campaign_id),
+            "session_id": str(trip_id),
+            "lat": p['lat'],
+            "lon": p['lon'],
+            "speed": p.get('speed', 0),
+            "heading": p.get('heading', 0),
+            "timestamp": p['timestamp']
+        })
+
+    try:
+        client.send_batch_locations(batch_payload)  # این متد را باید به کلاینت اضافه کنیم
+    except Exception as exc:
+        logger.error(f"Batch forwarding failed: {exc}")
+        raise self.retry(exc=exc)
