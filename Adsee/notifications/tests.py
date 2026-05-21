@@ -5,7 +5,7 @@ from accounts.models import User
 from notifications.models import Notification
 from campaigns.models import Campaign, CampaignDesign, Template
 from brands.models import Brand
-from accounts.models import ClientProfile
+from clients.models import ClientProfile
 from print_shops.models import PrintShopProfile
 
 class NotificationModelTest(TestCase):

@@ -3,7 +3,7 @@ from django.db import models
 
 class Brand(models.Model):
     client = models.ForeignKey(
-        'accounts.ClientProfile',
+        'clients.ClientProfile',
         on_delete=models.CASCADE,
         related_name='brands'
     )

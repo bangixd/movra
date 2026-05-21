@@ -4,7 +4,9 @@ from django.utils import timezone
 from datetime import date, timedelta
 from django.contrib.gis.geos import Point, Polygon
 
-from accounts.models import User, DriverProfile, ClientProfile
+from accounts.models import User
+from drivers.models import DriverProfile
+from clients.models import ClientProfile
 from brands.models import Brand
 from vehicles.models import VehicleType, Vehicle
 from campaigns.models import (

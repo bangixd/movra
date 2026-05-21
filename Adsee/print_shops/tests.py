@@ -5,7 +5,7 @@ from accounts.models import User
 from print_shops.models import PrintShopProfile
 from campaigns.models import CampaignDesign, Campaign
 from brands.models import Brand
-from accounts.models import ClientProfile
+from clients.models import ClientProfile
 from vehicles.models import VehicleType
 from campaigns.models import Template
 

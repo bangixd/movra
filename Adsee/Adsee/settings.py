@@ -56,7 +56,9 @@ INSTALLED_APPS = [
     "django_ratelimit",
 
     # My apps
-    "accounts.apps.AccountsConfig",
+    "accounts",
+    "drivers",
+    "clients",
     "brands",
     "campaigns",
     "vehicles",

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import CampaignDesign, ProductImage, Template, Campaign, CampaignSetting, CampaignArea,\
     CampaignPricingRule, CampaignInvoice
-from accounts.models import ClientProfile
+from clients.models import ClientProfile
 from brands.models import Brand
 from geo.models import City, Neighborhood, SuggestedRoute
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryField

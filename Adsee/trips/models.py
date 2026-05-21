@@ -1,5 +1,5 @@
 from django.db import models
-from accounts.models import DriverProfile
+from drivers.models import DriverProfile
 from django.core.exceptions import ValidationError
 
 

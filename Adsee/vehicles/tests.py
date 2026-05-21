@@ -1,6 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
-from accounts.models import User, DriverProfile
+from accounts.models import User
+from drivers.models import DriverProfile
 from .models import VehicleType, Vehicle
 
 class VehicleModelTest(TestCase):

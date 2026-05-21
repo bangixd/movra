@@ -16,7 +16,7 @@ class Campaign(models.Model):
         REJECTED = "REJECTED"
 
     client = models.ForeignKey(
-        "accounts.ClientProfile",
+        "clients.ClientProfile",
         on_delete=models.CASCADE,
         related_name="campaigns"
     )
@@ -239,7 +239,6 @@ class CampaignArea(geomodels.Model):
         return f"Area for {self.campaign_id} - {self.area_type}"
 
     def clean(self):
-        from django.core.exceptions import ValidationError
 
         if self.area_type == self.AreaType.CIRCLE:
             if not self.city or not self.neighborhood:
