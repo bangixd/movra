@@ -35,11 +35,11 @@ class AnalyticsServiceClient:
         resp.raise_for_status()
         return resp.json()
 
-    def register_vehicle(self, vehicle_id: str, vehicle_display_name: str = "", **extra_fields):
+    def register_vehicle(self, vehicle_id: str, display_name: str = "", **extra_fields):
         """ ثبت یک خودروی جدید در سرویس خارجی """
         payload = {
             "vehicle_id": vehicle_id,
-            "vehicle_display_name": vehicle_display_name or vehicle_id,
+            "display_name": display_name or vehicle_id,
             **extra_fields
 
         }
@@ -50,6 +50,7 @@ class AnalyticsServiceClient:
                 headers=self._headers(),
                 timeout=5
             )
+            print(self._headers())
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:

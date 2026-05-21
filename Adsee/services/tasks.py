@@ -69,11 +69,11 @@ def forward_location_to_analytics_task(self, driver_id, trip_id,
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def register_vehicle_task(self, vehicle_plate, display_name,
                           driver_id=None, driver_name=None, driver_phone=None,
-                          campaign_id=None):   # ← پارامتر جدید
+                          created_at=None, updated_at=None):   # ← پارامتر جدید
     client = AnalyticsServiceClient()
     payload = {
         "vehicle_id": vehicle_plate,
-        "vehicle_display_name": display_name
+        "display_name": display_name
     }
     if driver_id:
         payload["driver_id"] = driver_id
@@ -81,8 +81,10 @@ def register_vehicle_task(self, vehicle_plate, display_name,
         payload["driver_name"] = driver_name
     if driver_phone:
         payload["driver_phone"] = driver_phone
-    if campaign_id:
-        payload["campaign_id"] = campaign_id
+    if created_at:
+        payload["created_at"] = created_at
+    if updated_at:
+        payload["updated_at"] = updated_at
 
     try:
         client.register_vehicle(vehicle_plate, display_name, extra_fields=payload)

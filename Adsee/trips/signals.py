@@ -15,13 +15,14 @@ def register_vehicle_on_trip_creation(sender, instance, created, **kwargs):
     vehicle = instance.vehicle
     driver = instance.driver
     driver_name = driver.full_name if hasattr(driver, 'full_name') else str(driver.user)
-    driver_phone = driver.user.phone
+    created_at = instance.created_at
+    updated_at = instance.updated_at
 
     register_vehicle_task.delay(
         vehicle_plate=vehicle.plate_number,
         display_name=f"{vehicle.plate_number} - {driver_name}",
         driver_id=driver.id,
         driver_name=driver_name,
-        driver_phone=driver_phone,
-        campaign_id=instance.campaign.id,   # اگر API قبول کند
+        created_at=created_at,
+        updated_at=updated_at,
     )

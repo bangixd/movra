@@ -4,9 +4,10 @@ from datetime import date, timedelta
 from django.contrib.gis.geos import Point
 
 # ۱. کلاینت
-from accounts.models import User, ClientProfile
+from accounts.models import User
+from clients.models import ClientProfile
 client_user = User.objects.create_user(phone='09121111111', role=User.Role.CLIENT)
-client_profile = ClientProfile.objects.get(user=client_user, full_name='Real Client', national_id='1234567890')
+client_profile = ClientProfile.objects.create(user=client_user, full_name='Real Client', national_id='1234567890')
 
 # ۲. برند
 from brands.models import Brand
@@ -35,7 +36,7 @@ campaign_setting = CampaignSetting.objects.create(
 print(f"Campaign created, end_date={campaign.end_date}")
 
 # ۵. راننده و خودرو
-from accounts.models import DriverProfile
+from drivers.models import DriverProfile
 driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
 driver_profile = DriverProfile.objects.create(user=driver_user, full_name='Real Driver', national_id='0987654321')
 
@@ -57,6 +58,8 @@ trip = Trip.objects.create(
     vehicle=vehicle,
     status=Trip.Status.PENDING
 )
+from services.analytics_client import AnalyticsServiceClient
+# Trip.objects.filter(driver=driver_profile).delete()
 print(f"Trip created, id={trip.id}")
 
 # صبر کن تا worker تسک ثبت خودرو را انجام دهد (چند ثانیه)
