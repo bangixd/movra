@@ -18,7 +18,7 @@ from mixins import SafeGetQuerysetMixin
 
 
 class CampaignViewSet(ModelViewSet):
-    permission_classes = [IsClientUser,]
+    permission_classes = [IsClientUser, IsOwnerOrAdmin]
     serializer_class = CampaignSerializer
 
     def get_queryset(self):
@@ -29,7 +29,7 @@ class CampaignViewSet(ModelViewSet):
 
 
 class CampaignSettingViewSet(SafeGetQuerysetMixin, ModelViewSet):
-    permission_classes = [IsAuthenticated, IsClientUser,]
+    permission_classes = [IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
     serializer_class = CampaignSettingSerializer
     queryset = CampaignSetting.objects.all() # یا فیلتر شده بر اساس campaign
 
@@ -60,7 +60,7 @@ class TemplateViewSet(ModelViewSet):
 
 
 class CampaignDesignViewSet(ModelViewSet):
-    permission_classes = [IsClientUser,]
+    permission_classes = [IsClientUser, IsOwnerOrAdmin]
     queryset = CampaignDesign.objects.select_related(
         'campaign',
         'template'
@@ -82,7 +82,7 @@ class CampaignDesignViewSet(ModelViewSet):
 
 
 class CampaignAreaViewSet(ModelViewSet):
-    permission_classes = [IsClientUser,]
+    permission_classes = [IsClientUser, IsOwnerOrAdmin]
 
     def get_queryset(self):
         user = self.request.user
@@ -189,7 +189,7 @@ class CampaignPricingRuleViewSet(ModelViewSet):
 
 
 class CampaignCostViewSet(ViewSet):
-    permission_classes = [IsClientUser,]
+    permission_classes = [IsClientUser, IsOwnerOrAdmin]
 
     @action(detail=True, methods=["post"], url_path="calculate-cost")
     def calculate_cost(self, request, pk=None):
@@ -237,7 +237,7 @@ class CampaignCostViewSet(ViewSet):
 
 class CampaignInvoiceViewSet(ModelViewSet):
     queryset = CampaignInvoice.objects.all()
-    permission_classes = [IsOwnerOrAdmin,]
+    permission_classes = [IsOwnerOrAdmin, IsOwnerOrAdmin]
 
     def get_serializer_class(self):
         if self.action == 'create':

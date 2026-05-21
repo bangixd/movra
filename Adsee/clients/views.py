@@ -17,9 +17,14 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = ClientProfile.objects.all()
     serializer_class = ClientProfileSerializer
-    permission_classes = [IsAuthenticated, IsClientUser]
+    permission_classes = [IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
+
+    # def get_queryset(self):
+    #     if self.request.user.is_staff:
+    #         return ClientProfile.objects.all()
+    #     return ClientProfile.objects.filter(user=self.request.user)
 
     def process_kyc(self, instance):
         document = instance.id_or_registration_copy
@@ -63,16 +68,16 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
         # self.process_kyc(instance)
 
-    def get_object(self):
-        user = self.request.user
-        if user.is_anonymous:
-            return None
-
-        try:
-            client_profile = ClientProfile.objects.get(user=user)
-            return client_profile
-        except ClientProfile.DoesNotExist:
-            raise Http404("Client profile not found for this user.")
+    # def get_object(self):
+    #     user = self.request.user
+    #     print(f"User: {self.request.user}, is_staff: {self.request.user.is_staff}")
+    #     if user.is_anonymous:
+    #         return None
+    #     try:
+    #         client_profile = ClientProfile.objects.get(user=user)
+    #         return client_profile
+    #     except ClientProfile.DoesNotExist:
+    #         raise Http404("Client profile not found for this user.")
 
     def perform_create(self, serializer):
         # اگر در درخواست، user مشخص شده باشد، از آن استفاده کن

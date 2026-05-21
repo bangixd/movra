@@ -4,7 +4,7 @@ from .views import (DriverProfileViewSet,
                     DriverKycStatusView, DriverProfileKycAdminView, DriverDocumentUploadView)
 
 router = DefaultRouter()
-router.register(r'driver-profiles', DriverProfileViewSet, basename='driverprofile')
+router.register(r'', DriverProfileViewSet, basename='driverprofile')
 
 urlpatterns = [
     path('', include(router.urls)),

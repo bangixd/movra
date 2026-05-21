@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from utils import send_otp_sms
 from .serializers import (UserSerializer, OTPRequestSerializer, OTPVerifySerializer)
 from .models import OTP
+from permissions import IsOwnerOrAdmin
 
 
 User = get_user_model()
@@ -24,7 +25,7 @@ User = get_user_model()
 
 
 class UserDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
 

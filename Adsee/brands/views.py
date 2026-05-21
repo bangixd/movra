@@ -1,11 +1,11 @@
 from rest_framework import viewsets, permissions
 from .models import Brand
 from .serializers import BrandListSerializer, BrandDetailSerializer
-from permissions import IsClientUser
+from permissions import IsClientUser, IsOwnerOrAdmin
 
 
 class BrandViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated, IsClientUser]
+    permission_classes = [permissions.IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
 
     def get_serializer_class(self):
         if self.action == 'list':

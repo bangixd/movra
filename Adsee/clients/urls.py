@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import ClientProfileViewSet
 
 router = DefaultRouter()
-router.register(r'client-profiles', ClientProfileViewSet, basename='clientprofile')
+router.register(r'', ClientProfileViewSet, basename='clientprofile')
 
 urlpatterns = [
     path('', include(router.urls)),

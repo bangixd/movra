@@ -41,7 +41,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ADMIN = "ADMIN", "Admin"
         CLIENT = "CLIENT", "Client"
         DRIVER = "DRIVER", "Driver"
-        PRINT_SHOP = "PRINT_SHOP", "Print Shop"
+        PRINT_SHOP = "PRINT_SHOP", "Print_Shop"
 
     phone = models.CharField(max_length=11, unique=True)
     role = models.CharField(

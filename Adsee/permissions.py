@@ -9,6 +9,9 @@ class IsClientUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and hasattr(request.user, 'client_profile')
 
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated and hasattr(request.user, 'client_profile')
+
 
 class IsDriverUser(permissions.BasePermission):
     """
@@ -16,6 +19,23 @@ class IsDriverUser(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         return request.user.is_authenticated and hasattr(request.user, 'driver_profile')
+
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated and hasattr(request.user, 'driver_profile')
+
+
+class IsPrintShopUser(permissions.BasePermission):
+    """اجازه فقط به کاربران دارای نقش PRINT_SHOP یا ادمین"""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.is_staff or
+            getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
+        )
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated and (
+                request.user.is_staff or
+                getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
+        )
 
 
 class IsClientOrAdmin(permissions.BasePermission):
@@ -44,6 +64,8 @@ class IsOwnerOrAdmin(permissions.BasePermission):
             return True
         if hasattr(obj, 'driver') and obj.driver == request.user:
             return True
+        if hasattr(obj, 'print-shot') and obj.print_shop == request.user:
+            return True
         if hasattr(obj, 'user') and obj.user == request.user:
             return True
         return False
@@ -56,10 +78,4 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user.is_staff
 
 
-class IsPrintShopUser(permissions.BasePermission):
-    """اجازه فقط به کاربران دارای نقش PRINT_SHOP یا ادمین"""
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and (
-            request.user.is_staff or
-            getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
-        )
+

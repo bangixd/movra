@@ -1,8 +1,9 @@
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
-from accounts.models import User, DriverProfile, ClientProfile, OTP
-
+from accounts.models import User, OTP
+from clients.models import ClientProfile
+from drivers.models import DriverProfile
 
 class UserModelTest(TestCase):
     def test_create_user_with_phone(self):

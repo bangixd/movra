@@ -1,7 +1,7 @@
 from .models import DriverProfile, DriverDocument
 from .serializers import DriverProfileSerializer, DriverDocumentSerializer, DriverProfileKycUpdateSerializer,\
     DriverProfileKycStatusSerializer
-from permissions import IsClientUser, IsDriverUser, IsOwnerOrAdmin
+from permissions import IsDriverUser, IsOwnerOrAdmin
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status, viewsets, serializers
 from rest_framework.throttling import UserRateThrottle
@@ -21,20 +21,20 @@ class DriverProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = DriverProfile.objects.all()
     serializer_class = DriverProfileSerializer
-    permission_classes = [IsAuthenticated, IsDriverUser]
+    permission_classes = [IsDriverUser, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
 
-    def get_object(self):
-        user = self.request.user
-        if user.is_anonymous:
-            return None
-
-        try:
-            driver_profile = DriverProfile.objects.get(user=user)
-            return driver_profile
-        except DriverProfile.DoesNotExist:
-            raise Http404("Driver profile not found for this user.")
+    # def get_object(self):
+    #     user = self.request.user
+    #     if user.is_anonymous:
+    #         return None
+    #
+    #     try:
+    #         driver_profile = DriverProfile.objects.get(user=user)
+    #         return driver_profile
+    #     except DriverProfile.DoesNotExist:
+    #         raise Http404("Driver profile not found for this user.")
 
     def perform_create(self, serializer):
         if self.request.user.is_authenticated:
@@ -47,7 +47,7 @@ class DriverDocumentUploadView(APIView):
     """
     API برای آپلود مدارک توسط راننده.
     """
-    permission_classes = [IsAuthenticated, IsDriverUser]
+    permission_classes = [IsAuthenticated, IsDriverUser, IsOwnerOrAdmin]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -107,7 +107,7 @@ class DriverKycStatusView(APIView):
     """
     API برای نمایش وضعیت کلی KYC و جزئیات مدارک آپلود شده توسط راننده.
     """
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsOwnerOrAdmin]
 
     def get(self, request, *args, **kwargs):
         try:
@@ -133,7 +133,7 @@ class DriverProfileKycAdminView(APIView):
     """
     API برای ادمین جهت بررسی، تأیید یا رد مدارک و پروفایل راننده.
     """
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]  # فرض می‌کنیم IsAdminUser را داریم
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsOwnerOrAdmin]  # فرض می‌کنیم IsAdminUser را داریم
 
     def get(self, request, user_id, format=None):
         """

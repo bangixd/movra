@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import OTP, DriverDocument
+from .models import OTP
 from django.core.validators import RegexValidator
 
 
