@@ -111,6 +111,7 @@ class DriverLocationViewSet(viewsets.ModelViewSet):
                 trip=trip,
                 point=Point(lon, lat, srid=4326),
                 timestamp=dt or timezone.now(),
+                source='batch',
                 # speed و heading را می‌توان از point گرفت، اما DriverLocation ما این فیلدها را ندارد.
                 # می‌توانید آن‌ها را در snapshot یا فیلدهای دیگر ذخیره کنید.
             )

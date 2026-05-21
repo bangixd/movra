@@ -92,6 +92,23 @@ class DriverLocation(geomodels.Model):
     point = geomodels.PointField(srid=4326)
     timestamp = geomodels.DateTimeField(auto_now_add=True, db_index=True)
 
+    source = models.CharField(
+        max_length=10,
+        choices=[('realtime', 'Real-time'), ('batch', 'Batch')],
+        default='realtime',
+        help_text="نحوه دریافت موقعیت"
+    )
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            geomodels.Index(fields=['driver', '-timestamp']),
+            geomodels.Index(fields=['source']),
+        ]
+
+    def __str__(self):
+        return f"Driver {self.driver_id} at {self.timestamp} ({self.source})"
+
     class Meta:
         ordering = ['-timestamp']
         indexes = [
