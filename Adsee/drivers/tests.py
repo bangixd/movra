@@ -2,19 +2,16 @@ from django.test import TestCase
 from django.utils import timezone
 from accounts.models import User
 from drivers.models import DriverProfile, DriverDocument
-from vehicles.models import VehicleType
 
 class DriverProfileModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(phone='09120001122', role=User.Role.DRIVER)
-        self.vehicle_type = VehicleType.objects.create(name='Sedan', base_hourly_rate=50000)
 
     def test_create_driver_profile(self):
         profile = DriverProfile.objects.create(
             user=self.user,
             full_name='Ali Rezaei',
             national_id='1234567890',
-            vehicle_type=self.vehicle_type,
         )
         self.assertEqual(profile.user, self.user)
         self.assertEqual(profile.kyc_status, 'NOT_STARTED')
@@ -26,7 +23,6 @@ class DriverProfileModelTest(TestCase):
             user=self.user,
             full_name='Ali',
             national_id='1234567890',
-            vehicle_type=self.vehicle_type,
         )
         self.assertIn(self.user.phone, str(profile))
 
@@ -35,7 +31,6 @@ class DriverProfileModelTest(TestCase):
             user=self.user,
             full_name='Ali',
             national_id='1234567890',
-            vehicle_type=self.vehicle_type,
             birth_date='1990-01-01',
             gender='MALE',
             father_name='Reza',
@@ -48,7 +43,6 @@ class DriverProfileModelTest(TestCase):
             user=self.user,
             full_name='Ali',
             national_id='1234567890',
-            vehicle_type=self.vehicle_type,
         )
         self.assertTrue(profile.share_location)
 

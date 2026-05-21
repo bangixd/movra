@@ -1,14 +1,17 @@
+from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 # from django.core import cache
 from rest_framework.throttling import UserRateThrottle
-from rest_framework import viewsets, serializers
+from rest_framework import viewsets, serializers, status
 from rest_framework.permissions import IsAuthenticated
-from utils import send_kyc_to_external_service
-from .serializers import ClientProfileSerializer
-from .models import ClientProfile
+from .serializers import ClientProfileSerializer, ClientDocumentSerializer
+from .models import ClientProfile, ClientDocument
 from permissions import IsClientUser, IsOwnerOrAdmin
+from rest_framework.response import Response
+from rest_framework.decorators import action
+
+
 
 
 class ClientProfileViewSet(viewsets.ModelViewSet):
@@ -20,35 +23,6 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
-
-    # def get_queryset(self):
-    #     if self.request.user.is_staff:
-    #         return ClientProfile.objects.all()
-    #     return ClientProfile.objects.filter(user=self.request.user)
-
-    def process_kyc(self, instance):
-        document = instance.id_or_registration_copy
-        if not document:
-            return
-        # existing_document = DriverDocument.objects.filter(
-        #     user=instance.user,
-        #     document_type=document
-        # ).first()
-        # if existing_document and existing_document.status != instance.KYCStatus.REJECTED:
-        #     # اگر مدرک از قبل وجود دارد و رد نشده، اجازه آپلود مجدد نمی‌دهیم مگر اینکه بخواهیم overwrite کنیم
-        #     # یا می‌توانیم اینجا منطق overwrite را اضافه کنیم
-        #     return Response(
-        #         {
-        #             "detail":
-        #             f"A document of type '{document}' already exists and is not rejected.
-        #             Please update it if necessary."},
-        #         status=status.HTTP_409_CONFLICT
-        #     )
-        try:
-            response = send_kyc_to_external_service(instance, document)
-        except:
-            return
-        return response
 
     def get_serializer(self, *args, **kwargs):
         if self.request.method == 'POST':
@@ -68,17 +42,6 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
         # self.process_kyc(instance)
 
-    # def get_object(self):
-    #     user = self.request.user
-    #     print(f"User: {self.request.user}, is_staff: {self.request.user.is_staff}")
-    #     if user.is_anonymous:
-    #         return None
-    #     try:
-    #         client_profile = ClientProfile.objects.get(user=user)
-    #         return client_profile
-    #     except ClientProfile.DoesNotExist:
-    #         raise Http404("Client profile not found for this user.")
-
     def perform_create(self, serializer):
         # اگر در درخواست، user مشخص شده باشد، از آن استفاده کن
         user_id = self.request.data.get('user')
@@ -91,3 +54,33 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         else:
             # اگر user مشخص نشده باشد، باید خطا بدهد (چون برای ادمین هم الزامی است)
             raise serializers.ValidationError({"user": "شناسه کاربر الزامی است."})
+
+
+class ClientDocumentViewSet(viewsets.ModelViewSet):
+    serializer_class = ClientDocumentSerializer
+    permission_classes = [IsOwnerOrAdmin]
+
+    # def get_queryset(self):
+    #     if self.request.user.is_staff:
+    #         return ClientDocument.objects.all()
+    #     return ClientDocument.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['patch'])
+    def review(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        doc = self.get_object()
+        new_status = request.data.get('status')
+        if new_status not in [ClientDocument.ApprovalStatus.APPROVED, ClientDocument.ApprovalStatus.REJECTED]:
+            return Response({"error": "invalid status"}, status=400)
+
+        doc.status = new_status
+        doc.reviewed_at = timezone.now()
+        if new_status == ClientDocument.ApprovalStatus.REJECTED:
+            doc.reject_reason = request.data.get('reject_reason', '')
+        doc.save()
+        return Response(ClientDocumentSerializer(doc).data)
