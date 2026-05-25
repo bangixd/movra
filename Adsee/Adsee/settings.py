@@ -9,17 +9,13 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # GDAL_LIBRARY_PATH
-
-GDAL_LIBRARY_PATH = r"C:\Program Files\QGISQT6 3.40.15\bin\gdal312.dll"
-
-GEOS_LIBRARY_PATH = r"C:\Program Files\QGISQT6 3.40.15\bin\geos_c.dll"
+# GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
+# GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
 
 # EXTERNAL API
 ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL")
 ANALYTICS_API_KEY = os.getenv("ANALYTICS_API_KEY")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -103,22 +99,20 @@ WSGI_APPLICATION = 'Adsee.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# import dj_database_url
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=os.environ.get('DATABASE_URL')
+#     )
+# }
 DATABASES = {
-    "default": {
-        "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
-        'TEST': {
-            'TEMPLATE': 'template0',
-            'CREATE_DB': True,
-            'CREATE_USER': True,
-            'CHARSET': 'UTF8',
-            'EXTENSIONS': ['postgis'],
-        },
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': os.environ['POSTGRES_DB'],
+        'USER': os.environ['POSTGRES_USER'],
+        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -158,6 +152,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# مسیر فایل‌های استاتیک و مدیا
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
