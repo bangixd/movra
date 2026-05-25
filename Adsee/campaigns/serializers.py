@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import CampaignDesign, ProductImage, Template, Campaign, CampaignSetting, CampaignArea,\
-    CampaignPricingRule, CampaignInvoice
+    CampaignPricingRule, CampaignInvoice, PaymentTransaction
 from clients.models import ClientProfile
 from brands.models import Brand
 from geo.models import City, Neighborhood, SuggestedRoute
@@ -728,3 +728,15 @@ class CampaignInvoiceCreateSerializer(serializers.ModelSerializer):
         )
         return invoice
 
+class PaymentRequestSerializer(serializers.Serializer):
+    invoice_id = serializers.IntegerField(required=True)
+
+class PaymentVerifySerializer(serializers.Serializer):
+    authority = serializers.CharField(max_length=200, required=True)
+    status = serializers.CharField(max_length=10, required=True)  # OK / NOK
+
+class PaymentTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentTransaction
+        fields = ['id', 'invoice', 'authority', 'ref_id', 'amount', 'status', 'created_at']
+        read_only_fields = fields

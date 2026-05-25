@@ -9,8 +9,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # GDAL_LIBRARY_PATH
-# GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
-# GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
+GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
 
 # EXTERNAL API
 ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL")
@@ -147,18 +147,11 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'static/'
 
 # مسیر فایل‌های استاتیک و مدیا
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -195,15 +188,14 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1), # زمان اعتبار توکن دسترسی
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),    # زمان اعتبار توکن بازسازی
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,               # اضافه کردن توکن‌های قدیمی به blacklist
-    "ALGORITHM": "HS256",                           # الگوریتم امضا
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
     "SIGNING_KEY": os.getenv("SIGNING_KEY"),
     "VERIFY_SIGNATURE": True,
     "AUDIENCE": None,
     "ISSUER": None,
     "JSON_WEB_TOKEN_IN_CALL_ARGS": False,
 
-    # کوکی ها (اختیاری، اگر می‌خواهی توکن را در کوکی ذخیره کنی)
     "AUTH_COOKIE_SECURE": True,
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SAMESITE": "Lax", # یا "Strict"
@@ -223,11 +215,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # OTP and SMS
-
 OTP_CODE_EXPIRY_MINUTES = os.getenv("OTP_CODE_EXPIRY_MINUTES")
 
 # CACHES
-
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -240,7 +230,6 @@ CACHES = {
 }
 
 #DRF-YASG swagger
-
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Basic': {
@@ -262,3 +251,8 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Tehran'
+
+# ZARINPAL
+ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID")          # از زرین‌پال دریافت کن
+ZARINPAL_SANDBOX = os.getenv("ZARINPAL_SANDBOX")                             # در محیط واقعی False کن
+ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL")   # آدرس بازگشت

@@ -1,7 +1,8 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .views import CampaignDesignViewSet, CampaignViewSet, CampaignSettingViewSet, TemplateViewSet,\
     CampaignAreaViewSet,\
-    CampaignPricingRuleViewSet, CampaignCostViewSet, CampaignInvoiceViewSet
+    CampaignPricingRuleViewSet, CampaignCostViewSet, CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView
 
 router = DefaultRouter()
 router.register(r'', CampaignViewSet, basename='campaign')
@@ -14,4 +15,7 @@ router.register(r"campaign-costs", CampaignCostViewSet, basename="campaign-costs
 router.register(r"campaign-invoices", CampaignInvoiceViewSet, basename="campaign-invoices")
 
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path('payments/request/', PaymentRequestView.as_view(), name='payment-request'),
+    path('payments/verify/', PaymentVerifyView.as_view(), name='payment-verify'),
+]

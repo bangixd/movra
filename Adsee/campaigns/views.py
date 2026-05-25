@@ -1,16 +1,19 @@
 from django.utils import timezone
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, filters, permissions
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from .models import CampaignDesign, Campaign, CampaignSetting, Template, CampaignArea, CampaignPricingRule,\
-    CampaignCost, CampaignInvoice
+    CampaignCost, CampaignInvoice, PaymentTransaction
+from services.payment_gateway import ZarinpalGateway
 from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignSettingSerializer, TemplateSerializer,\
     CampaignDesignCreateSerializer, CampaignDesignUpdateSerializer,\
     CampaignAreaDetailSerializer, CampaignAreaCreateSerializer, CampaignPricingRuleSerializer,\
-    CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer
+    CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer,\
+    PaymentRequestSerializer, PaymentVerifySerializer, PaymentTransactionSerializer
 from .services.campaign_pricing_service import CampaignPricingService
 from permissions import IsClientUser, IsOwnerOrAdmin
 from vehicles.models import VehicleType
@@ -263,3 +266,80 @@ class CampaignInvoiceViewSet(ModelViewSet):
         invoice.paid_at = timezone.now()
         invoice.save()
         return Response(self.get_serializer(invoice).data)
+
+
+class PaymentRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PaymentRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            invoice = CampaignInvoice.objects.get(
+                id=serializer.validated_data['invoice_id'],
+                campaign__brand__client__user=request.user,
+                status=CampaignInvoice.Status.ISSUED
+            )
+        except CampaignInvoice.DoesNotExist:
+            return Response({"error": "فاکتور معتبر نیست"}, status=404)
+
+        gateway = ZarinpalGateway()
+        success, payment_url_or_error, error = gateway.send_request(
+            amount=invoice.total_price,
+            description=f'Invoice {invoice.invoice_number}',
+            mobile=request.user.phone
+        )
+
+        if success:
+            # ذخیره تراکنش
+            PaymentTransaction.objects.create(
+                invoice=invoice,
+                authority=payment_url_or_error.split('/')[-1],  # استخراج authority از URL
+                amount=invoice.total_price,
+                status=PaymentTransaction.Status.PENDING
+            )
+            return Response({'payment_url': payment_url_or_error}, status=200)
+        else:
+            return Response({"error": error or "خطا در اتصال به درگاه"}, status=400)
+
+
+class PaymentVerifyView(APIView):
+    permission_classes = []  # از آنجایی که زرین‌پال callback را GET می‌زند، احراز هویت ندارد
+
+    def get(self, request):
+        # زرین‌پال پارامترهای Authority و Status را در query string برمی‌گرداند
+        authority = request.query_params.get('Authority')
+        status_param = request.query_params.get('Status')
+
+        if not authority or not status_param:
+            return Response({"error": "پارامترها نامعتبر"}, status=400)
+
+        try:
+            transaction = PaymentTransaction.objects.get(authority=authority)
+        except PaymentTransaction.DoesNotExist:
+            return Response({"error": "تراکنش یافت نشد"}, status=404)
+
+        if status_param == 'OK':
+            gateway = ZarinpalGateway()
+            success, ref_id = gateway.verify_payment(authority, transaction.amount)
+            if success:
+                transaction.status = PaymentTransaction.Status.SUCCESSFUL
+                transaction.ref_id = ref_id
+                transaction.save()
+
+                # به‌روزرسانی فاکتور
+                transaction.invoice.status = CampaignInvoice.Status.PAID
+                transaction.invoice.paid_at = timezone.now()
+                transaction.invoice.save()
+
+                return Response({'message': 'پرداخت موفق بود', 'ref_id': ref_id}, status=200)
+            else:
+                transaction.status = PaymentTransaction.Status.FAILED
+                transaction.response_data = {'error': ref_id}
+                transaction.save()
+                return Response({'error': 'تأیید پرداخت ناموفق'}, status=400)
+        else:
+            transaction.status = PaymentTransaction.Status.FAILED
+            transaction.save()
+            return Response({'error': 'پرداخت توسط کاربر لغو شد'}, status=400)
