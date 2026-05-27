@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "print_shops",
     "notifications",
     "wallets",
+    "support",
 
 ]
 
