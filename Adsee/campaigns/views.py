@@ -1,6 +1,9 @@
 from django.utils import timezone
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.decorators import action
+from django.http import HttpResponse
+import csv
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from trips.models import TripAnalysis, Trip
@@ -372,32 +375,30 @@ class CampaignAnalysisListView(generics.ListAPIView):
 
 
 class CampaignAnalysisCSVView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsClientUser]
 
     def get(self, request, campaign_id):
         user = request.user
+        # ابتدا کمپین را واکشی می‌کنیم تا از وجود آن و مالکیت مطمئن شویم
+        campaign = get_object_or_404(Campaign, id=campaign_id)
 
-        # دسترسی: ادمین یا کلاینت صاحب کمپین
-        if not user.is_staff:
-            # بررسی مالکیت کمپین (از طریق برند → کلاینت)
-            if not Trip.objects.filter(
-                campaign_id=campaign_id,
-                campaign__brand__client__user=user
-            ).exists():
-                return Response({"error": "شما به این کمپین دسترسی ندارید."}, status=403)
+        # بررسی دسترسی: ادمین یا کلاینت صاحب کمپین
+        if not user.is_staff and campaign.client.user != user:
+            return Response({"error": "شما به این کمپین دسترسی ندارید."}, status=403)
 
-        # فقط تحلیل‌های سفرهای کامل‌شده
+        # تحلیل‌های سفرهای کامل‌شدهٔ این کمپین
         analyses = TripAnalysis.objects.filter(
-            trip__campaign_id=campaign_id,
+            trip__campaign=campaign,
             trip__status=Trip.Status.COMPLETED
         ).select_related('trip__driver__user', 'trip__vehicle', 'trip__campaign')
 
+        # ساخت خروجی CSV
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="campaign_{campaign_id}_analysis.csv"'
-        response.write('\ufeff'.encode('utf8'))  # BOM برای نمایش صحیح فارسی در Excel
+        response.write('\ufeff'.encode('utf8'))  # BOM برای نمایش فارسی درست
         writer = csv.writer(response)
 
-        # هدر ستون‌ها
+        # هدر
         writer.writerow([
             'شناسه سفر', 'نام راننده', 'پلاک خودرو', 'عنوان کمپین',
             'زمان شروع', 'زمان پایان',
@@ -411,7 +412,7 @@ class CampaignAnalysisCSVView(APIView):
                 trip.id,
                 trip.driver.full_name if trip.driver else '',
                 trip.vehicle.plate_number if trip.vehicle else '',
-                trip.campaign.slogan if trip.campaign else '',
+                campaign.slogan,
                 trip.start_time.strftime('%Y-%m-%d %H:%M:%S') if trip.start_time else '',
                 trip.end_time.strftime('%Y-%m-%d %H:%M:%S') if trip.end_time else '',
                 analysis.active_seconds,
