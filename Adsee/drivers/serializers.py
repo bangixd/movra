@@ -11,6 +11,8 @@ class DriverProfileSerializer(serializers.ModelSerializer):
         max_digits=12,
         decimal_places=2
     )
+    active_campaigns = serializers.SerializerMethodField()
+
 
     class Meta:
         model = DriverProfile
@@ -22,10 +24,27 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             'kyc_status', 'kyc_reject_reason',
             'registration_step', 'is_contract_accepted',
             'share_location', 'last_location_update',
-            'wallet_balance',
+            'wallet_balance', 'active_campaigns',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['user', 'kyc_status', 'registration_step', 'is_contract_accepted', 'created_at', 'updated_at']
+
+    def get_active_campaigns(self, obj):
+        from trips.models import Trip
+        active_trips = Trip.objects.filter(
+            driver=obj,
+            status=Trip.Status.ACTIVE
+        ).select_related('campaign')
+        campaigns = [trip.campaign for trip in active_trips]
+        return [
+            {
+                'id': c.id,
+                'title': c.slogan,
+                'start_date': c.start_date,
+                'end_date': c.end_date,
+            }
+            for c in campaigns
+        ]
 
     def validate(self, data):
         # در مرحله ۱، فیلدهای اجباری را چک کن
