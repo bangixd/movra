@@ -49,9 +49,8 @@ urlpatterns = [
     path('api/trips/', include('trips.urls')),
     path('api/print_shops/', include('print_shops.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/wallets/', include('wallets.urls')),
     path('api/support/', include('support.urls')),
-
-
 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
