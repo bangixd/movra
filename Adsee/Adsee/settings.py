@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "trips",
     "print_shops",
     "notifications",
+    "wallets",
 
 ]
 

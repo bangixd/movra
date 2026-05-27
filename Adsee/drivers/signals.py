@@ -7,5 +7,4 @@ from services.tasks import process_driver_document
 @receiver(post_save, sender=DriverDocument)
 def trigger_driver_document_processing(sender, instance, created, **kwargs):
     if created:
-        # ارسال به Celery برای پردازش پس‌زمینه
         process_driver_document.delay(instance.id)

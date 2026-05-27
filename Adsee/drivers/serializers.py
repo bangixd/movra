@@ -5,6 +5,12 @@ from geo.models import City
 class DriverProfileSerializer(serializers.ModelSerializer):
     city_name = serializers.CharField(source='city.name', read_only=True)
     province_name = serializers.CharField(source='city.province.name', read_only=True)
+    wallet_balance = serializers.DecimalField(
+        source='user.wallet.balance',
+        read_only=True,
+        max_digits=12,
+        decimal_places=2
+    )
 
     class Meta:
         model = DriverProfile
@@ -16,6 +22,7 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             'kyc_status', 'kyc_reject_reason',
             'registration_step', 'is_contract_accepted',
             'share_location', 'last_location_update',
+            'wallet_balance',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['user', 'kyc_status', 'registration_step', 'is_contract_accepted', 'created_at', 'updated_at']
