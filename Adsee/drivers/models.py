@@ -6,66 +6,89 @@ from django.core.validators import RegexValidator
 
 
 class DriverProfile(models.Model):
-    class KYCStatus(models.TextChoices):
-        NOT_STARTED = "NOT_STARTED", "Not Started"
-        PENDING = "PENDING", "Pending"
-        APPROVED = "APPROVED", "Approved"
-        REJECTED = "REJECTED", "Rejected"
+    # وضعیت‌های ثبت‌نام
+    class RegistrationStep(models.IntegerChoices):
+        PERSONAL_INFO = 1, 'اطلاعات شخصی'
+        DOCUMENTS = 2, 'بارگذاری مدارک'
+        VERIFICATION = 3, 'احراز هویت'
+        CONTRACT = 4, 'قرارداد'
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="driver_profile"
+        related_name='driver_profile'
     )
 
-    # اطلاعات هویتی
-    full_name = models.CharField(max_length=100)
-    national_id = models.CharField(
-        max_length=10,
-        blank=True,
-        null=True,
-        validators=[RegexValidator(r"^\d{10}$", message="کد ملی باید ۱۰ رقمی باشد.")]
-    )
+    # اطلاعات مرحله ۱
+    first_name = models.CharField(max_length=50, blank=True, null=True)
+    last_name = models.CharField(max_length=50, blank=True, null=True)
+    national_id = models.CharField(max_length=10, unique=True, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
-    gender = models.CharField(
-        max_length=10, choices=[("MALE", "مرد"), ("FEMALE", "زن")], blank=True, null=True
+    city = models.ForeignKey(
+        'geo.City',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='drivers'
     )
-    avatar = models.ImageField(upload_to="drivers/avatars/", blank=True, null=True)
+
+    # اطلاعات تکمیلی (اختیاری)
+    avatar = models.ImageField(upload_to='drivers/avatars/', blank=True, null=True)
+    gender = models.CharField(max_length=10, choices=[('MALE', 'مرد'), ('FEMALE', 'زن')], blank=True, null=True)
     father_name = models.CharField(max_length=100, blank=True, null=True)
 
-    # وضعیت احراز هویت (توسط سیگنال‌ها به‌روز می‌شود)
+    # وضعیت احراز هویت (مرحله ۳)
     kyc_status = models.CharField(
-        max_length=20, choices=KYCStatus.choices, default=KYCStatus.NOT_STARTED
+        max_length=20,
+        choices=[
+            ('PENDING', 'در انتظار'),
+            ('APPROVED', 'تأیید شده'),
+            ('REJECTED', 'رد شده'),
+        ],
+        default='PENDING'
     )
     kyc_submitted_at = models.DateTimeField(blank=True, null=True)
     kyc_reviewed_at = models.DateTimeField(blank=True, null=True)
     kyc_reject_reason = models.TextField(blank=True, null=True)
 
-    # موقعیت و اشتراک‌گذاری موقعیت (قابل انتقال به مدل جداگانه در صورت نیاز)
+    # مرحله ثبت‌نام جاری
+    registration_step = models.PositiveSmallIntegerField(
+        choices=RegistrationStep.choices,
+        default=RegistrationStep.PERSONAL_INFO
+    )
+    # مرحله ۴: پذیرش قرارداد
+    is_contract_accepted = models.BooleanField(default=False)
+
+    # تنظیمات موقعیت (اختیاری)
     share_location = models.BooleanField(default=True)
     last_location_update = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        verbose_name = "پروفایل راننده"
-        verbose_name_plural = "پروفایل رانندگان"
+    @property
+    def full_name(self):
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        return self.user.phone
 
     def __str__(self):
-        return f"DriverProfile for {self.user.phone}"
+        return f"Driver: {self.full_name}"
+
+    class Meta:
+        verbose_name = 'پروفایل راننده'
+        verbose_name_plural = 'پروفایل رانندگان'
 
 class DriverDocument(models.Model):
     class DocumentType(models.TextChoices):
-        NATIONAL_ID_FRONT = 'NATIONAL_ID_FRONT', 'National ID Front'
-        NATIONAL_ID_BACK = 'NATIONAL_ID_BACK', 'National ID Back'
-        DRIVING_LICENSE = 'DRIVING_LICENSE', 'Driving License'
-        VEHICLE_REGISTRATION = 'VEHICLE_REGISTRATION', 'Vehicle Registration'
+        PROFILE_PICTURE = 'PROFILE_PICTURE', 'عکس پروفایل'
+        DRIVING_LICENSE = 'DRIVING_LICENSE', 'گواهینامه'
+        VEHICLE_CARD = 'VEHICLE_CARD', 'کارت خودرو'
+        GREEN_SHEET = 'GREEN_SHEET', 'برگه سبز'
 
     class ApprovalStatus(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        APPROVED = 'APPROVED', 'Approved'
-        REJECTED = 'REJECTED', 'Rejected'
+        PENDING = 'PENDING', 'در انتظار'
+        APPROVED = 'APPROVED', 'تأیید شده'
+        REJECTED = 'REJECTED', 'رد شده'
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='driver_documents')
     document_type = models.CharField(max_length=30, choices=DocumentType.choices)
@@ -74,7 +97,6 @@ class DriverDocument(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reject_reason = models.TextField(blank=True)
-    processed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.phone} - {self.document_type}"
