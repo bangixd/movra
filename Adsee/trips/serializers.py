@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Trip
+from .models import Trip, TripAnalysis
 from campaigns.models import Campaign
 from vehicles.models import Vehicle
 from django.utils import timezone
@@ -93,3 +93,8 @@ class TripDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['driver', 'snapshot', 'created_at', 'updated_at',
                             'print_shop_name', 'print_shop_address', 'print_shop_phone',]
+
+class TripAnalysisSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TripAnalysis
+        fields = '__all__'

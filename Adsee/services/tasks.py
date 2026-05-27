@@ -144,3 +144,45 @@ def forward_batch_locations_task(self, trip_id, vehicle_plate, campaign_id, poin
     except Exception as exc:
         logger.error(f"Batch forwarding failed: {exc}")
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def fetch_and_store_trip_analysis(self, trip_id):
+    from trips.models import Trip, TripAnalysis
+    try:
+        trip = Trip.objects.get(id=trip_id)
+    except Trip.DoesNotExist:
+        return
+
+    if not (trip.start_time and trip.end_time):
+        return
+
+    vehicle_id = trip.vehicle.plate_number
+    start_ts = int(trip.start_time.timestamp())
+    end_ts = int(trip.end_time.timestamp())
+
+    client = AnalyticsServiceClient()
+    try:
+        # گرفتن خلاصه
+        summary = client.get_analysis_summary(vehicle_id, start_ts, end_ts)
+        # ایجاد analysis-run و گرفتن run_id
+        run_result = client.create_analysis_run(vehicle_id, start_ts, end_ts)
+        run_id = run_result.get('run_id')
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+    # ذخیره در TripAnalysis
+    TripAnalysis.objects.update_or_create(
+        trip=trip,
+        defaults={
+            'active_seconds': summary.get('active_seconds', 0),
+            'distance_km': summary.get('distance_km', 0),
+            'exposure_score': summary.get('exposure_score', 0),
+            'estimated_impressions': summary.get('estimated_impressions', 0),
+            'data_quality': summary.get('data_quality', 0),
+            'confidence': summary.get('confidence', 0),
+            'avg_traffic_ratio': summary.get('avg_traffic_ratio', 0),
+            'raw_response': summary,
+            'analysis_run_id': run_id,
+        }
+    )

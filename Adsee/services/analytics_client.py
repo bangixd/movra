@@ -106,3 +106,36 @@ class AnalyticsServiceClient:
         )
         resp.raise_for_status()
         return resp.json()
+
+    def get_analysis_summary(self, vehicle_id: str, start_ts: int, end_ts: int):
+        """خلاصهٔ تحلیل (active_time, distance, exposure, impressions, confidence)"""
+        resp = requests.get(
+            f"{self.base_url}/vehicles/{vehicle_id}/analysis/summary",
+            params={"start_ts": start_ts, "end_ts": end_ts},
+            headers=self._headers(),
+            timeout=10
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_analysis_full(self, vehicle_id: str, start_ts: int, end_ts: int, bucket_seconds=300):
+        """گزارش کامل تحلیل"""
+        resp = requests.get(
+            f"{self.base_url}/vehicles/{vehicle_id}/analysis",
+            params={"start_ts": start_ts, "end_ts": end_ts, "bucket_seconds": bucket_seconds},
+            headers=self._headers(),
+            timeout=10
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def create_analysis_run(self, vehicle_id: str, start_ts: int, end_ts: int):
+        """ایجاد snapshot برای تسویه (analysis-run)"""
+        resp = requests.post(
+            f"{self.base_url}/vehicles/{vehicle_id}/analysis-runs",
+            json={"start_ts": start_ts, "end_ts": end_ts},
+            headers=self._headers(),
+            timeout=10
+        )
+        resp.raise_for_status()
+        return resp.json()  # حاوی run_id
