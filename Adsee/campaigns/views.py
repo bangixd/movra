@@ -3,6 +3,9 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from trips.models import TripAnalysis, Trip
+from trips.serializers import TripAnalysisSerializer
+from rest_framework import generics, permissions
 from rest_framework import status, filters, permissions
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
@@ -343,3 +346,79 @@ class PaymentVerifyView(APIView):
             transaction.status = PaymentTransaction.Status.FAILED
             transaction.save()
             return Response({'error': 'پرداخت توسط کاربر لغو شد'}, status=400)
+
+
+class CampaignAnalysisListView(generics.ListAPIView):
+    """
+    لیست تحلیل سفرهای یک کمپین خاص.
+    فقط کلاینت صاحب کمپین یا ادمین می‌تواند ببیند.
+    """
+    serializer_class = TripAnalysisSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        campaign_id = self.kwargs.get('campaign_id')
+        user = self.request.user
+
+        # ادمین همه را ببیند
+        if user.is_staff:
+            return TripAnalysis.objects.filter(trip__campaign_id=campaign_id)
+
+        # کلاینت فقط تحلیل‌های کمپین‌های خودش
+        return TripAnalysis.objects.filter(
+            trip__campaign_id=campaign_id,
+            trip__campaign__brand__client__user=user
+        )
+
+
+class CampaignAnalysisCSVView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, campaign_id):
+        user = request.user
+
+        # دسترسی: ادمین یا کلاینت صاحب کمپین
+        if not user.is_staff:
+            # بررسی مالکیت کمپین (از طریق برند → کلاینت)
+            if not Trip.objects.filter(
+                campaign_id=campaign_id,
+                campaign__brand__client__user=user
+            ).exists():
+                return Response({"error": "شما به این کمپین دسترسی ندارید."}, status=403)
+
+        # فقط تحلیل‌های سفرهای کامل‌شده
+        analyses = TripAnalysis.objects.filter(
+            trip__campaign_id=campaign_id,
+            trip__status=Trip.Status.COMPLETED
+        ).select_related('trip__driver__user', 'trip__vehicle', 'trip__campaign')
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="campaign_{campaign_id}_analysis.csv"'
+        response.write('\ufeff'.encode('utf8'))  # BOM برای نمایش صحیح فارسی در Excel
+        writer = csv.writer(response)
+
+        # هدر ستون‌ها
+        writer.writerow([
+            'شناسه سفر', 'نام راننده', 'پلاک خودرو', 'عنوان کمپین',
+            'زمان شروع', 'زمان پایان',
+            'مدت فعال (ثانیه)', 'مسافت (کیلومتر)', 'امتیاز نمایش',
+            'تخمین تعداد مشاهده', 'درآمد (تومان)'
+        ])
+
+        for analysis in analyses:
+            trip = analysis.trip
+            writer.writerow([
+                trip.id,
+                trip.driver.full_name if trip.driver else '',
+                trip.vehicle.plate_number if trip.vehicle else '',
+                trip.campaign.slogan if trip.campaign else '',
+                trip.start_time.strftime('%Y-%m-%d %H:%M:%S') if trip.start_time else '',
+                trip.end_time.strftime('%Y-%m-%d %H:%M:%S') if trip.end_time else '',
+                analysis.active_seconds,
+                analysis.distance_km,
+                analysis.exposure_score,
+                analysis.estimated_impressions,
+                trip.earnings
+            ])
+
+        return response

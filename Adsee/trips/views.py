@@ -180,7 +180,12 @@ class TripViewSet(viewsets.ModelViewSet):
         fetch_and_store_trip_analysis.delay(trip.id)
         return Response({"message": "درخواست به‌روزرسانی تحلیل ثبت شد."}, status=202)
 
-
+    @action(detail=False, methods=['get'])
+    def my_analysis_list(self, request):
+        """لیست تحلیل‌های همهٔ سفرهای راننده جاری"""
+        analyses = TripAnalysis.objects.filter(trip__driver__user=request.user)
+        serializer = TripAnalysisSerializer(analyses, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def export_csv(self, request):

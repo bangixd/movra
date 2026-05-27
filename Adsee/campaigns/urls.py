@@ -2,7 +2,8 @@ from rest_framework.routers import DefaultRouter
 from django.urls import path
 from .views import CampaignDesignViewSet, CampaignViewSet, CampaignSettingViewSet, TemplateViewSet,\
     CampaignAreaViewSet,\
-    CampaignPricingRuleViewSet, CampaignCostViewSet, CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView
+    CampaignPricingRuleViewSet, CampaignCostViewSet, CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView, \
+    CampaignAnalysisListView, CampaignAnalysisCSVView
 
 router = DefaultRouter()
 router.register(r'', CampaignViewSet, basename='campaign')
@@ -18,4 +19,7 @@ router.register(r"campaign-invoices", CampaignInvoiceViewSet, basename="campaign
 urlpatterns = router.urls + [
     path('payments/request/', PaymentRequestView.as_view(), name='payment-request'),
     path('payments/verify/', PaymentVerifyView.as_view(), name='payment-verify'),
+    path('<int:campaign_id>/analysis/', CampaignAnalysisListView.as_view(), name='campaign-analysis'),
+    path('<int:campaign_id>/analysis/csv/', CampaignAnalysisCSVView.as_view(), name='campaign-analysis-csv'),
+
 ]
