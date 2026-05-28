@@ -7,6 +7,8 @@ from permissions import IsDriverUser
 
 class WalletViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated, IsDriverUser]
+    serializer_class= WalletSummarySerializer
+
 
     def get_queryset(self):
         return Wallet.objects.filter(user=self.request.user)

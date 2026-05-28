@@ -1,7 +1,9 @@
 from rest_framework import viewsets, status, permissions
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.http import HttpResponse
+from datetime import date
 import csv
 from django.utils import timezone
 from .models import Trip, TripAnalysis
@@ -13,14 +15,17 @@ from .serializers import (
     TripAnalysisSerializer,
     DriverTripListSerializer,
     DriverTripDetailSerializer,
+    InstallationUploadSerializer,
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
 from campaigns.models import Campaign
-from campaigns.serializers import CampaignBriefSerializer
+from campaigns.serializers import CampaignBriefSerializer, AvailableCampaignSerializer
 from permissions import IsDriverUser
 from services.tasks import update_earnings_task, fetch_and_store_trip_analysis
 from services.analytics_client import AnalyticsServiceClient
+from geo.models import DriverLocation
+from notifications.models import Notification
 import logging
 
 
@@ -98,6 +103,8 @@ class TripViewSet(viewsets.ModelViewSet):
         if trip.status != Trip.Status.PENDING:
             return Response({"error": "فقط سفرهای در انتظار می‌توانند شروع شوند."},
                             status=status.HTTP_400_BAD_REQUEST)
+        # if not trip.installation_verified:
+            # return Response({"error": "ابتدا باید عکس‌های نصب بنر تأیید شوند."}, status=400)
         trip.status = Trip.Status.ACTIVE
         trip.start_time = timezone.now()
         trip.save()
@@ -269,3 +276,84 @@ class TripViewSet(viewsets.ModelViewSet):
         client = AnalyticsServiceClient()
         result = client.calculate_earnings(trip.vehicle.plate_number, start_ts, end_ts)
         return Response(result)
+
+    @action(detail=True, methods=['patch'], url_path='upload-installation')
+    def upload_installation(self, request, pk=None):
+        trip = self.get_object()
+        if trip.driver.user != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        serializer = InstallationUploadSerializer(trip, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # اگر هر دو عکس آپلود شده باشند، به‌طور خودکار تأیید اولیه (اختیاری)
+        if trip.sticker_image and trip.driver_car_image:
+            trip.installation_verified = True
+            trip.installation_verified_at = timezone.now()
+            trip.save()
+
+        return Response(TripDetailSerializer(trip).data)
+
+
+class DriverHomeView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsDriverUser]
+
+    def get(self, request):
+        user = request.user
+        driver_profile = user.driver_profile
+
+        # ۱. خلاصه پروفایل
+        profile_data = {
+            'name': driver_profile.full_name,
+            'avatar': driver_profile.avatar.url if driver_profile.avatar else None,
+            'wallet_balance': user.wallet.balance,
+            'kyc_status': driver_profile.kyc_status,
+        }
+
+        # آخرین موقعیت راننده
+        last_location = DriverLocation.objects.filter(driver=user).order_by('-timestamp').first()
+        if last_location:
+            profile_data['last_location'] = {
+                'lat': last_location.point.y,
+                'lng': last_location.point.x,
+                'timestamp': last_location.timestamp.isoformat()
+            }
+
+        # ۲. سفر فعال
+        active_trip = Trip.objects.filter(
+            driver=driver_profile,
+            status__in=[Trip.Status.ACTIVE, Trip.Status.PAUSED]
+        ).select_related('campaign', 'vehicle', 'campaign__area', 'campaign__design__print_shop').first()
+
+        if active_trip:
+            trip_serializer = DriverTripDetailSerializer(active_trip)
+            campaign_data = None
+            status = 'active_trip'
+        else:
+            # ۳. کمپین‌های در دسترس
+            # فیلتر بر اساس شهر راننده (از پروفایل یا آخرین موقعیت)
+            city = driver_profile.city
+            available_campaigns = Campaign.objects.filter(
+                status=Campaign.Status.ACTIVE,
+                start_date__lte=date.today(),
+                end_date__gte=date.today()
+            )
+            if city:
+                available_campaigns = available_campaigns.filter(area__city=city)
+
+            campaign_serializer = AvailableCampaignSerializer(available_campaigns, many=True)
+            campaign_data = campaign_serializer.data
+            trip_serializer = None
+            status = 'no_active_trip'
+
+        # ۴. اعلان‌های خوانده‌نشده
+        unread_notifications = Notification.objects.filter(recipient=user, is_read=False).count()
+
+        return Response({
+            'profile': profile_data,
+            'status': status,
+            'active_trip': trip_serializer.data if trip_serializer else None,
+            'available_campaigns': campaign_data,
+            'unread_notifications': unread_notifications,
+        })

@@ -55,6 +55,12 @@ class Trip(models.Model):
     # اسنپ‌شات تنظیمات کمپین و خودرو در لحظه‌ی ایجاد
     snapshot = models.JSONField(default=dict, null=True, blank=True)
 
+    #نصب بنر و تایید
+    sticker_image = models.ImageField(upload_to='trips/installations/', null=True, blank=True)
+    driver_car_image = models.ImageField(upload_to='trips/installations/', null=True, blank=True)
+    installation_verified = models.BooleanField(default=False)
+    installation_verified_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
