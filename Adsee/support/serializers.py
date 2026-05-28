@@ -13,7 +13,7 @@ class SiteSettingSerializer(serializers.ModelSerializer):
         model = SiteSetting
         fields = [
             'brand_name', 'brand_logo', 'about_text', 'about_image',
-            'phone', 'email', 'address', 'social_links'
+            'phone', 'email', 'address', 'social_links', 'referral_reward_amount'
         ]
 
 class TicketCreateSerializer(serializers.ModelSerializer):

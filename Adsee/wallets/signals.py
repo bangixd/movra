@@ -2,13 +2,13 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from trips.models import Trip
-from .models import Wallet, Transaction
+from .models import Wallet, Transaction, ReferralReward
+from support.models import SiteSetting
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_wallet_for_user(sender, instance, created, **kwargs):
     if created:
         Wallet.objects.get_or_create(user=instance)
-
 
 @receiver(post_save, sender=Trip)
 def create_income_transaction(sender, instance, created, **kwargs):
@@ -27,3 +27,40 @@ def create_income_transaction(sender, instance, created, **kwargs):
             wallet.balance += instance.earnings
             wallet.total_earnings += instance.earnings
             wallet.save()
+
+@receiver(post_save, sender=Trip)
+def process_referral_reward(sender, instance, created, **kwargs):
+    if instance.status == Trip.Status.COMPLETED and instance.earnings > 0:
+        driver = instance.driver
+        # بررسی کن که این اولین سفر تکمیل‌شدهٔ این راننده است
+        completed_trips = Trip.objects.filter(
+            driver=driver,
+            status=Trip.Status.COMPLETED
+        ).exclude(id=instance.id).count()
+
+        if completed_trips == 0 and driver.referred_by:
+            # جلوگیری از ایجاد جایزه تکراری
+            if not ReferralReward.objects.filter(trip=instance).exists():
+                # خواندن مبلغ از SiteSetting
+                site_setting = SiteSetting.objects.filter(is_active=True).first()
+                reward_amount = site_setting.referral_reward_amount if site_setting else 50000                # ثبت جایزه
+                ReferralReward.objects.create(
+                    driver=driver.referred_by,
+                    referred_driver=driver,
+                    trip=instance,
+                    amount=reward_amount
+                )
+                # واریز به کیف پول
+                wallet = driver.referred_by.user.wallet
+                wallet.balance += reward_amount
+                wallet.total_earnings += reward_amount
+                wallet.save()
+                # ثبت تراکنش
+                Transaction.objects.create(
+                    wallet=wallet,
+                    amount=reward_amount,
+                    transaction_type=Transaction.TransactionType.BONUS,
+                    status=Transaction.Status.SUCCESS,
+                    description=f'جایزه دعوت راننده {driver.full_name}',
+                    trip=instance
+                )

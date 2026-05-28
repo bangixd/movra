@@ -41,6 +41,15 @@ class SiteSetting(models.Model):
     #     "twitter": "https://twitter.com/..."
     # }
 
+    # میزان جایزه برای دعوت از دوستان رانندگان
+    referral_reward_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=50000,
+        verbose_name="مبلغ جایزه دعوت از دوستان (تومان)"
+    )
+
+
     is_active = models.BooleanField(default=True, verbose_name="فعال")
     updated_at = models.DateTimeField(auto_now=True)
 

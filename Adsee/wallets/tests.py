@@ -1,6 +1,6 @@
 from django.test import TestCase
 from accounts.models import User
-from wallet.models import Wallet
+from wallets.models import Wallet
 
 class WalletSignalTest(TestCase):
     def test_wallet_created_automatically(self):

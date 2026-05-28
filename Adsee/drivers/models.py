@@ -62,6 +62,16 @@ class DriverProfile(models.Model):
     share_location = models.BooleanField(default=True)
     last_location_update = models.DateTimeField(blank=True, null=True)
 
+    #کد دعوت راننده
+    referral_code = models.CharField(max_length=10, unique=True, blank=True, null=True, verbose_name="کد معرف")
+    referred_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='referrals',
+        verbose_name="دعوت‌شده توسط"
+    )
+
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

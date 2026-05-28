@@ -1,11 +1,13 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.utils import timezone
+from wallets.models import models, ReferralReward
 from .models import DriverProfile, DriverDocument
 from .serializers import DriverProfileSerializer, DriverDocumentSerializer
+from rest_framework.permissions import IsAuthenticated, BasePermission
 
-class IsDriverOrAdmin(permissions.BasePermission):
+class IsDriverOrAdmin(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
@@ -13,7 +15,7 @@ class IsDriverOrAdmin(permissions.BasePermission):
 
 class DriverProfileViewSet(viewsets.ModelViewSet):
     serializer_class = DriverProfileSerializer
-    permission_classes = [permissions.IsAuthenticated, IsDriverOrAdmin]
+    permission_classes = [IsAuthenticated, IsDriverOrAdmin]
 
     def get_queryset(self):
         user = self.request.user
@@ -37,10 +39,48 @@ class DriverProfileViewSet(viewsets.ModelViewSet):
         profile.save()
         return Response(DriverProfileSerializer(profile).data)
 
+    @action(detail=False, methods=['get'])
+    def referral_summary(self, request):
+        driver = request.user.driver_profile
+        # تعداد دعوت‌های موفق
+        invited_count = ReferralReward.objects.filter(driver=driver).count()
+        # مجموع جوایز دریافتی
+        total_rewards = ReferralReward.objects.filter(driver=driver).aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+
+        return Response({
+            'referral_code': driver.referral_code,
+            'invited_count': invited_count,
+            'total_rewards': total_rewards,
+            'rewards': ReferralReward.objects.filter(driver=driver).values(
+                'amount', 'created_at', 'referred_driver__full_name'
+            ).order_by('-created_at')
+        })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def apply_referral_code(request):
+    code = request.data.get('referral_code')
+    if not code:
+        return Response({'error': 'کد معرف الزامی است'}, status=400)
+
+    try:
+        referrer = DriverProfile.objects.get(referral_code=code)
+    except DriverProfile.DoesNotExist:
+        return Response({'error': 'کد معرف نامعتبر است'}, status=404)
+
+    driver = request.user.driver_profile
+    if driver.referred_by:
+        return Response({'error': 'شما قبلاً توسط یک راننده دیگر دعوت شده‌اید'}, status=400)
+
+    driver.referred_by = referrer
+    driver.save()
+    return Response({'message': 'کد معرف با موفقیت ثبت شد'})
 
 class DriverDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DriverDocumentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsDriverOrAdmin]
+    permission_classes = [IsAuthenticated, IsDriverOrAdmin]
 
     def get_queryset(self):
         user = self.request.user
