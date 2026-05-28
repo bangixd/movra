@@ -151,3 +151,9 @@ class TripAnalysis(models.Model):
     analysis_run_id = models.CharField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    #جزییات کسریات سفر
+    night_factor = models.FloatField(default=1.0)
+    long_stop_factor = models.FloatField(default=1.0)
+    suspicious_stop_penalty = models.FloatField(default=0.0)
+    invalid_data_penalty = models.FloatField(default=0.0)
+    total_penalty_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)

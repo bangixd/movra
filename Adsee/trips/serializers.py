@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Trip, TripAnalysis
+from datetime import date, datetime
+from django.utils import timezone
 from campaigns.models import Campaign
 from vehicles.models import Vehicle
 from django.utils import timezone
@@ -102,3 +104,134 @@ class TripAnalysisSerializer(serializers.ModelSerializer):
     class Meta:
         model = TripAnalysis
         fields = '__all__'
+
+
+class DriverTripListSerializer(serializers.ModelSerializer):
+    """برای لیست سفرها (خلاصه)"""
+    brand_name = serializers.CharField(source='campaign.brand_name.name', read_only=True)
+    area_name = serializers.CharField(source='campaign.area.area_type', read_only=True)  # یا نام شهر
+    remaining_hours = serializers.SerializerMethodField()
+    remaining_days = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Trip
+        fields = [
+            'id', 'brand_name', 'area_name', 'status',
+            'remaining_hours', 'remaining_days',
+            'start_time', 'end_time',
+            'earnings', 'total_distance_km'
+        ]
+
+    def get_remaining_days(self, obj):
+        campaign = obj.campaign
+        if campaign and campaign.end_date:
+            today = date.today()
+            if campaign.end_date >= today:
+                return (campaign.end_date - today).days
+        return 0
+
+    def get_remaining_hours(self, obj):
+        """بر اساس روزهای باقی‌مانده و ساعت فعالیت روزانه کمپین"""
+        remaining_days = self.get_remaining_days(obj)
+        if remaining_days > 0:
+            try:
+                setting = obj.campaign.setting
+                hours_per_day = setting.activity_hours_per_day.hour if setting.activity_hours_per_day else 8
+                return remaining_days * hours_per_day
+            except:
+                pass
+        return 0
+
+
+class DriverTripDetailSerializer(serializers.ModelSerializer):
+    """برای جزئیات یک سفر (صفحهٔ تکی)"""
+    brand_name = serializers.CharField(source='campaign.brand_name.name', read_only=True)
+    area_name = serializers.CharField(source='campaign.area.area_type', read_only=True)
+    # اگر شهر در CampaignArea موجود است، می‌توانیم اسم شهر را هم بگیریم
+    city_name = serializers.CharField(source='campaign.area.city.name', read_only=True, default=None)
+
+    remaining_hours = serializers.SerializerMethodField()
+    remaining_days = serializers.SerializerMethodField()
+    distance_km = serializers.FloatField(source='analysis.distance_km', read_only=True, default=0.0)
+    current_earnings = serializers.SerializerMethodField()
+    deductions = serializers.SerializerMethodField()
+    paid_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Trip
+        fields = [
+            'id', 'brand_name', 'area_name', 'city_name', 'status',
+            'start_time', 'end_time',
+            'remaining_hours', 'remaining_days',
+            'distance_km', 'current_earnings',
+            'deductions', 'paid_amount',
+            'earnings',  # درآمد نهایی بعد از اتمام
+            'total_distance_km',  # مسافت کل
+            'campaign', 'vehicle'
+        ]
+
+    def get_deductions(self, obj):
+        """کسریات و ضرایب کاهش درآمد از تحلیل ذخیره‌شده"""
+        if hasattr(obj, 'analysis') and obj.analysis:
+            raw = obj.analysis.raw_response
+            # اگر پاسخ شامل فیلد penalties باشد
+            if 'penalties' in raw:
+                penalties = raw['penalties']
+            else:
+                # در غیر این صورت، خود raw_response را بررسی کن
+                penalties = {
+                    'night_factor': raw.get('night_income_factor', 1.0),
+                    'long_stop_factor': raw.get('long_stop_income_factor', 1.0),
+                    'suspicious_stop_penalty': raw.get('suspicious_stop_penalty_factor', 0.0),
+                    'invalid_data_penalty': raw.get('invalid_data_penalty_factor', 0.0),
+                    'total_penalty_amount': raw.get('total_penalty_amount', 0),
+                }
+            return penalties
+        return {}
+
+    def get_remaining_days(self, obj):
+        campaign = obj.campaign
+        if campaign and campaign.end_date:
+            today = date.today()
+            if campaign.end_date >= today:
+                return (campaign.end_date - today).days
+        return 0
+
+    def get_remaining_hours(self, obj):
+        """بر اساس روزهای باقی‌مانده و ساعت فعالیت روزانه کمپین"""
+        remaining_days = self.get_remaining_days(obj)
+        if remaining_days > 0:
+            try:
+                setting = obj.campaign.setting
+                hours_per_day = setting.activity_hours_per_day.hour if setting.activity_hours_per_day else 8
+                return remaining_days * hours_per_day
+            except:
+                pass
+        return 0
+
+    def get_current_earnings(self, obj):
+        """درآمد تا این لحظه (برای سفرهای فعال از API خارجی گرفته می‌شود)"""
+        if obj.status == Trip.Status.ACTIVE and obj.start_time:
+            # اینجا می‌توانیم از سرویس analytics بگیریم، اما برای سادگی از فیلد earnings صرف نظر می‌کنیم
+            # یا یک تسک Celery برای به‌روزرسانی دوره‌ای earnings دارد.
+            return obj.earnings  # موقتاً همان earnings نهایی که ممکن است هنوز محاسبه نشده باشد
+        return obj.earnings
+
+    def get_deductions(self, obj):
+        """کسریات از raw_response تحلیل (اگر موجود باشد)"""
+        if hasattr(obj, 'analysis') and obj.analysis:
+            raw = obj.analysis.raw_response
+            # بسته به ساختار پاسخ سرویس، این بخش قابل تنظیم است
+            return raw.get('penalties', {})
+        return {}
+
+    def get_paid_amount(self, obj):
+        """مبلغ پرداخت‌شده به راننده (آخرین تراکنش موفق)"""
+        if obj.status == Trip.Status.COMPLETED:
+            tx = obj.wallet_transactions.filter(
+                transaction_type='INCOME',
+                status='SUCCESS'
+            ).first()
+            if tx:
+                return tx.amount
+        return None

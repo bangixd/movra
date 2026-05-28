@@ -11,25 +11,41 @@ from .serializers import (
     TripDetailSerializer,
     TripStatusUpdateSerializer,
     TripAnalysisSerializer,
+    DriverTripListSerializer,
+    DriverTripDetailSerializer,
 )
+from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import rest_framework as filters
 from campaigns.models import Campaign
 from campaigns.serializers import CampaignBriefSerializer
 from permissions import IsDriverUser
 from services.tasks import update_earnings_task, fetch_and_store_trip_analysis
 from services.analytics_client import AnalyticsServiceClient
 import logging
+
+
 logger = logging.getLogger(__name__)
+class TripFilter(filters.FilterSet):
+    status = filters.ChoiceFilter(choices=Trip.Status.choices)
+
+    class Meta:
+        model = Trip
+        fields = ['status']
 
 class TripViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsDriverUser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TripFilter
 
     def get_serializer_class(self):
         if self.action == 'create':
             return TripCreateSerializer
         elif self.action in ['start', 'pause', 'resume', 'complete', 'cancel']:
             return TripStatusUpdateSerializer
-        elif self.action == 'list':
-            return TripListSerializer
+        if self.action == 'list':
+            return DriverTripListSerializer
+        elif self.action == 'retrieve':
+            return DriverTripDetailSerializer
         return TripDetailSerializer
 
     def get_queryset(self):
@@ -238,3 +254,18 @@ class TripViewSet(viewsets.ModelViewSet):
             ])
 
         return response
+
+    @action(detail=True, methods=['get'])
+    def current_earnings(self, request, pk=None):
+        trip = self.get_object()
+        if trip.driver.user != request.user and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if not trip.start_time:
+            return Response({"earnings": 0})
+
+        end_ts = int(timezone.now().timestamp())
+        start_ts = int(trip.start_time.timestamp())
+        client = AnalyticsServiceClient()
+        result = client.calculate_earnings(trip.vehicle.plate_number, start_ts, end_ts)
+        return Response(result)
