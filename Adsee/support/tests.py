@@ -1,6 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 from accounts.models import User
+from .models import SiteSetting
 
 class SupportAPITest(TestCase):
     def setUp(self):
@@ -14,3 +15,21 @@ class SupportAPITest(TestCase):
         response = self.client.get('/api/support/content/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
+
+class SiteSettingAPITest(TestCase):
+    def setUp(self):
+        self.setting = SiteSetting.objects.create(
+            brand_name="برند تست",
+            about_text="توضیحات درباره ما",
+            phone="02112345678",
+            email="info@test.com",
+            social_links={"instagram": "https://instagram.com/test"}
+        )
+        self.client = APIClient()
+
+    def test_about_api(self):
+        response = self.client.get('/api/support/about/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['brand_name'], 'برند تست')
+        self.assertEqual(response.data['phone'], '02112345678')
+        self.assertIn('instagram', response.data['social_links'])
