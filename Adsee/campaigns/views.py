@@ -1,8 +1,14 @@
 from django.utils import timezone
-from rest_framework.viewsets import ModelViewSet, ViewSet
+from datetime import timedelta
+from rest_framework.viewsets import ModelViewSet, ViewSet, ReadOnlyModelViewSet
+from rest_framework.generics import ListAPIView
 from rest_framework.decorators import action
+from django.core.serializers.json import DjangoJSONEncoder
+import json
 from django.http import HttpResponse
 import csv
+from rest_framework.decorators import api_view, permission_classes
+from .pricing import calculate_campaign_cost
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,18 +19,18 @@ from rest_framework import status, filters, permissions
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from .models import CampaignDesign, Campaign, CampaignSetting, Template, CampaignArea, CampaignPricingRule,\
-    CampaignCost, CampaignInvoice, PaymentTransaction
+    CampaignInvoice, PaymentTransaction, BannerType, CampaignGoal
 from services.payment_gateway import ZarinpalGateway
 from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignSettingSerializer, TemplateSerializer,\
     CampaignDesignCreateSerializer, CampaignDesignUpdateSerializer,\
     CampaignAreaDetailSerializer, CampaignAreaCreateSerializer, CampaignPricingRuleSerializer,\
     CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer,\
-    PaymentRequestSerializer, PaymentVerifySerializer, PaymentTransactionSerializer
-from .services.campaign_pricing_service import CampaignPricingService
+    PaymentRequestSerializer, PaymentVerifySerializer, PaymentTransactionSerializer, BannerTypeSerializer,\
+    CampaignGoalSerializer
 from permissions import IsClientUser, IsOwnerOrAdmin
 from vehicles.models import VehicleType
 from mixins import SafeGetQuerysetMixin
-
+from .utils import generate_invoice_number
 
 class CampaignViewSet(ModelViewSet):
     permission_classes = [IsClientUser, IsOwnerOrAdmin]
@@ -35,7 +41,6 @@ class CampaignViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(client=self.request.user.client_profile)
-
 
 class CampaignSettingViewSet(SafeGetQuerysetMixin, ModelViewSet):
     permission_classes = [IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
@@ -61,12 +66,20 @@ class CampaignSettingViewSet(SafeGetQuerysetMixin, ModelViewSet):
         campaign = Campaign.objects.get(pk=campaign_id)
         serializer.save(campaign=campaign)
 
+class CampaignGoalListView(ListAPIView):
+    queryset = CampaignGoal.objects.filter(is_active=True)
+    serializer_class = CampaignGoalSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-class TemplateViewSet(ModelViewSet):
-    permission_classes = [IsOwnerOrAdmin,]
+class BannerTypeListView(ListAPIView):
+    queryset = BannerType.objects.filter(is_active=True)
+    serializer_class = BannerTypeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class TemplateListView(ListAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
-
+    permission_classes = [permissions.IsAuthenticated]
 
 class CampaignDesignViewSet(ModelViewSet):
     permission_classes = [IsClientUser, IsOwnerOrAdmin]
@@ -88,7 +101,6 @@ class CampaignDesignViewSet(ModelViewSet):
         if not user.is_authenticated:
             return qs.none()
         return qs.filter(campaign__client=self.request.user)
-
 
 class CampaignAreaViewSet(ModelViewSet):
     permission_classes = [IsClientUser, IsOwnerOrAdmin]
@@ -184,10 +196,7 @@ class CampaignAreaViewSet(ModelViewSet):
         )
         return Response(output.data, status=status.HTTP_201_CREATED)
 
-
 class CampaignPricingRuleViewSet(ModelViewSet):
-    permission_classes = [IsOwnerOrAdmin,]
-
     queryset = CampaignPricingRule.objects.all().order_by("key")
     serializer_class = CampaignPricingRuleSerializer
     permission_classes = [IsAdminUser]
@@ -196,53 +205,15 @@ class CampaignPricingRuleViewSet(ModelViewSet):
     ordering_fields = ["key", "created_at", "updated_at"]
     ordering = ["key"]
 
-
-class CampaignCostViewSet(ViewSet):
-    permission_classes = [IsClientUser, IsOwnerOrAdmin]
-
-    @action(detail=True, methods=["post"], url_path="calculate-cost")
-    def calculate_cost(self, request, pk=None):
-        campaign = Campaign.objects.get(pk=pk)
-
-        serializer = CampaignCostCalculationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-
-        vehicle = VehicleType.objects.get(pk=data["vehicle_type_id"])
-
-        cost, created = CampaignCost.objects.get_or_create(campaign=campaign)
-
-        cost.drivers_count = data["drivers_count"]
-        cost.days_count = data["days_count"]
-        cost.hours_per_day = data["hours_per_day"]
-        cost.vehicle_type = vehicle
-        cost.design_type = data["design_type"]
-        cost.area_type = data["area_type"]
-        cost.save()
-
-        CampaignPricingService.refresh_cost(cost)
-
-        return Response({
-            "campaign_id": campaign.id,
-            "cost_id": cost.id,
-            "subtotal_price": str(cost.subtotal_price),
-            "tax_amount": str(cost.tax_amount),
-            "total_price": str(cost.total_price),
-            "status": cost.status,
-            "items": [
-                {
-                    "item_type": item.item_type,
-                    "title": item.title,
-                    "quantity": str(item.quantity),
-                    "unit_price": str(item.unit_price),
-                    "total_price": str(item.total_price),
-                    "meta": item.meta,
-                }
-                for item in cost.items.all()
-            ],
-        }, status=status.HTTP_200_OK)
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsClientUser])
+def campaign_cost(request, campaign_id):
+    campaign = get_object_or_404(Campaign, id=campaign_id, brand_name__client__user=request.user)
+    # بررسی وجود مراحل ضروری
+    if not hasattr(campaign, 'setting') or not hasattr(campaign, 'design') or not hasattr(campaign, 'area'):
+        return Response({'error': 'لطفاً همه مراحل (تنظیمات، طراحی، مسیر) را تکمیل کنید.'}, status=400)
+    cost = calculate_campaign_cost(campaign)
+    return Response(cost)
 
 class CampaignInvoiceViewSet(ModelViewSet):
     queryset = CampaignInvoice.objects.all()
@@ -273,48 +244,82 @@ class CampaignInvoiceViewSet(ModelViewSet):
         invoice.save()
         return Response(self.get_serializer(invoice).data)
 
-
 class PaymentRequestView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsClientUser]
 
     def post(self, request):
-        serializer = PaymentRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        campaign_id = request.data.get('campaign_id')
+        campaign = get_object_or_404(Campaign, id=campaign_id, brand_name__client__user=request.user)
 
-        try:
-            invoice = CampaignInvoice.objects.get(
-                id=serializer.validated_data['invoice_id'],
-                campaign__brand__client__user=request.user,
-                status=CampaignInvoice.Status.ISSUED
-            )
-        except CampaignInvoice.DoesNotExist:
-            return Response({"error": "فاکتور معتبر نیست"}, status=404)
+        # ۱. محاسبهٔ هزینه
+        cost = calculate_campaign_cost(campaign)
+        snapshot = json.loads(json.dumps(cost, cls=DjangoJSONEncoder))
+        total = cost['total']
 
+        # یافتن فاکتور ISSUED موجود
+        existing_invoice = CampaignInvoice.objects.filter(
+            campaign=campaign,
+            status=CampaignInvoice.Status.ISSUED
+        ).first()
+
+        if existing_invoice:
+            if existing_invoice.is_expired:
+                # منقضی شده → آن را EXPIRED کن و خطا بده
+                existing_invoice.status = CampaignInvoice.Status.EXPIRED
+                existing_invoice.save()
+                return Response(
+                    {"error": "فاکتور منقضی شده است. لطفاً دوباره درخواست دهید."},
+                    status=400
+                )
+            else:
+                # فاکتور معتبر پرداخت‌نشده وجود دارد
+                return Response(
+                    {"error": "یک فاکتور فعال برای این کمپین وجود دارد. لطفاً پرداخت را تکمیل کنید."},
+                    status=400
+                )
+
+        # ایجاد فاکتور جدید
+        snapshot = json.loads(json.dumps(cost, cls=DjangoJSONEncoder))
+        invoice = CampaignInvoice.objects.create(
+            campaign=campaign,
+            invoice_number=generate_invoice_number(),
+            subtotal_price=cost['subtotal'],
+            discount_amount=cost.get('discount', 0),
+            tax_amount=cost['tax'],
+            total_price=total,
+            expires_at=timezone.now() + timedelta(minutes=15),
+            snapshot=snapshot,
+            status=CampaignInvoice.Status.ISSUED,
+        )
+
+        # ۳. اتصال به زرین‌پال
         gateway = ZarinpalGateway()
         success, payment_url_or_error, error = gateway.send_request(
-            amount=invoice.total_price,
-            description=f'Invoice {invoice.invoice_number}',
+            amount=total,
+            description=f'کمپین {campaign.slogan}',
             mobile=request.user.phone
         )
 
         if success:
-            # ذخیره تراکنش
             PaymentTransaction.objects.create(
                 invoice=invoice,
-                authority=payment_url_or_error.split('/')[-1],  # استخراج authority از URL
-                amount=invoice.total_price,
-                status=PaymentTransaction.Status.PENDING
+                authority=payment_url_or_error.split('/')[-1],
+                amount=total,
+                status=PaymentTransaction.Status.INITIATED
             )
-            return Response({'payment_url': payment_url_or_error}, status=200)
+            return Response({
+                'payment_url': payment_url_or_error,
+                'invoice_id': invoice.id
+            }, status=200)
         else:
+            invoice.status = CampaignInvoice.Status.VOID  # یا حذف
+            invoice.save()
             return Response({"error": error or "خطا در اتصال به درگاه"}, status=400)
 
-
 class PaymentVerifyView(APIView):
-    permission_classes = []  # از آنجایی که زرین‌پال callback را GET می‌زند، احراز هویت ندارد
+    permission_classes = []  # زرین‌پال احراز هویت ندارد
 
     def get(self, request):
-        # زرین‌پال پارامترهای Authority و Status را در query string برمی‌گرداند
         authority = request.query_params.get('Authority')
         status_param = request.query_params.get('Status')
 
@@ -326,20 +331,33 @@ class PaymentVerifyView(APIView):
         except PaymentTransaction.DoesNotExist:
             return Response({"error": "تراکنش یافت نشد"}, status=404)
 
+        invoice = transaction.invoice
+
         if status_param == 'OK':
             gateway = ZarinpalGateway()
-            success, ref_id = gateway.verify_payment(authority, transaction.amount)
+            success, ref_id = gateway.verify_payment(authority, invoice.total_price)
+
             if success:
                 transaction.status = PaymentTransaction.Status.SUCCESSFUL
                 transaction.ref_id = ref_id
                 transaction.save()
 
                 # به‌روزرسانی فاکتور
-                transaction.invoice.status = CampaignInvoice.Status.PAID
-                transaction.invoice.paid_at = timezone.now()
-                transaction.invoice.save()
+                invoice.status = CampaignInvoice.Status.PAID
+                invoice.paid_at = timezone.now()
+                invoice.save()
 
-                return Response({'message': 'پرداخت موفق بود', 'ref_id': ref_id}, status=200)
+                # فعال‌سازی کمپین
+                campaign = invoice.campaign
+                campaign.status = Campaign.Status.ACTIVE
+                campaign.save()
+
+                return Response({
+                    'message': 'پرداخت موفق بود',
+                    'ref_id': ref_id,
+                    'campaign_id': campaign.id,
+                    'status': 'success'
+                }, status=200)
             else:
                 transaction.status = PaymentTransaction.Status.FAILED
                 transaction.response_data = {'error': ref_id}
@@ -348,8 +366,11 @@ class PaymentVerifyView(APIView):
         else:
             transaction.status = PaymentTransaction.Status.FAILED
             transaction.save()
-            return Response({'error': 'پرداخت توسط کاربر لغو شد'}, status=400)
-
+            return Response({
+                'error': 'پرداخت توسط کاربر لغو شد',
+                'status': 'cancelled',
+                'campaign_id': invoice.campaign.id
+            }, status=400)
 
 class CampaignAnalysisListView(generics.ListAPIView):
     """
@@ -372,7 +393,6 @@ class CampaignAnalysisListView(generics.ListAPIView):
             trip__campaign_id=campaign_id,
             trip__campaign__brand__client__user=user
         )
-
 
 class CampaignAnalysisCSVView(APIView):
     permission_classes = [IsAuthenticated, IsClientUser]

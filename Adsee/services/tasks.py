@@ -3,6 +3,8 @@ from services.analytics_client import AnalyticsServiceClient
 from services.sms_client import MeliPayamakClient
 from clients.models import ClientDocument
 from trips.models import Trip, TripAnalysis
+from campaigns.models import CampaignInvoice
+from django.utils import timezone
 import time
 
 import logging
@@ -196,3 +198,17 @@ def send_otp_sms_task(self, phone, code):
     success, status = client.send_sms(phone, message)
     if not success:
         raise self.retry(exc=Exception(f"SMS failed: {status}"))
+
+
+# services/tasks.py
+@shared_task
+def expire_pending_invoices():
+    now = timezone.now()
+    invoices = CampaignInvoice.objects.filter(
+        status=CampaignInvoice.Status.ISSUED,
+        expires_at__lte=now
+    )
+    count = invoices.update(status=CampaignInvoice.Status.EXPIRED)
+    if count:
+        logger.info(f"Expired {count} invoices")
+

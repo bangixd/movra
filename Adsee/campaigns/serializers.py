@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from datetime import timedelta
 from .models import CampaignDesign, ProductImage, Template, Campaign, CampaignSetting, CampaignArea,\
-    CampaignPricingRule, CampaignInvoice, PaymentTransaction
+    CampaignPricingRule, CampaignInvoice, PaymentTransaction, CampaignGoal, BannerType
 from clients.models import ClientProfile
 from brands.models import Brand
 from geo.models import City, Neighborhood, SuggestedRoute
@@ -16,12 +16,10 @@ class BrandMiniSerializer(serializers.ModelSerializer):
         model = Brand
         fields = ['id', 'name']
 
-
 class ClientProfileMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
         fields = ['id', 'full_name']
-
 
 class CampaignSerializer(serializers.ModelSerializer):
     client_detail = ClientProfileMiniSerializer(source='client', read_only=True)
@@ -34,6 +32,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             'client',
             'client_detail',
             'slogan',
+            'goal',
             'brand_name',
             'brand_detail',
             'description',
@@ -59,7 +58,6 @@ class CampaignSerializer(serializers.ModelSerializer):
 
         return attrs
 
-
 class CampaignBriefSerializer(serializers.ModelSerializer):
     """برای نمایش خلاصه کمپین در لیست راننده"""
     brand_name = serializers.CharField(source='brand.name', read_only=True)
@@ -72,7 +70,6 @@ class CampaignBriefSerializer(serializers.ModelSerializer):
             'id', 'slogan', 'brand_name', 'area_type',
             'start_date', 'end_date', 'max_driver'
         ]
-
 
 class CampaignSettingSerializer(serializers.ModelSerializer):
     class Meta:
@@ -123,12 +120,20 @@ class CampaignSettingSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+class CampaignGoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignGoal
+        fields = '__all__'
+
+class BannerTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BannerType
+        fields = '__all__'
 
 class TemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Template
-        fields = ['id', 'name', 'variant', 'preview_image']
-
+        fields = '__all__'
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -139,7 +144,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
             'image',
         ]
         read_only_fields = ['id']
-
 
 class CampaignDesignSerializer(serializers.ModelSerializer):
     print_shop_detail = PrintShopProfileSerializer(source='print_shop', read_only=True)
@@ -156,6 +160,7 @@ class CampaignDesignSerializer(serializers.ModelSerializer):
             'template_detail',
             'user_uploaded_file',
             'final_design_file',
+            'banner_type',
             'logo_brand',
             'designer_note',
             'status',
@@ -174,12 +179,10 @@ class CampaignDesignSerializer(serializers.ModelSerializer):
             'estimated_ready_date'
         ]
 
-
 class ProductImageNestedSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['image']
-
 
 class CampaignDesignCreateSerializer(serializers.ModelSerializer):
     product_images = ProductImageNestedSerializer(many=True, required=False)
@@ -224,7 +227,6 @@ class CampaignDesignCreateSerializer(serializers.ModelSerializer):
             )
 
         return campaign_design
-
 
 class CampaignDesignUpdateSerializer(serializers.ModelSerializer):
     product_images = ProductImageNestedSerializer(many=True, required=False)
@@ -282,24 +284,20 @@ class CampaignDesignUpdateSerializer(serializers.ModelSerializer):
 
         return instance
 
-
 class CityMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = City
         fields = ["id", "name"]
-
 
 class NeighborhoodMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = Neighborhood
         fields = ["id", "name", "city"]
 
-
 class SuggestedRouteMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = SuggestedRoute
         fields = ["id", "name"]
-
 
 class CampaignAreaCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -425,7 +423,6 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
 
         return attrs
 
-
 class CampaignAreaDetailSerializer(serializers.ModelSerializer):
     city = CityMiniSerializer(read_only=True)
     neighborhood = NeighborhoodMiniSerializer(read_only=True)
@@ -449,7 +446,6 @@ class CampaignAreaDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
 
 class CampaignAreaSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -571,6 +567,12 @@ class CampaignAreaSerializer(GeoFeatureModelSerializer):
 
         return attrs
 
+class PricingRuleAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignPricingRule
+        fields = ['id', 'key', 'title', 'value_type', 'decimal_value', 'integer_value',
+                  'boolean_value', 'text_value', 'json_value', 'is_active']
+        read_only_fields = ['key']  # کلید نباید تغییر کند
 
 class CampaignPricingRuleSerializer(serializers.ModelSerializer):
     value = serializers.SerializerMethodField()
@@ -633,7 +635,6 @@ class CampaignPricingRuleSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-
 class CampaignCostCalculationSerializer(serializers.Serializer):
     drivers_count = serializers.IntegerField(min_value=1)
     days_count = serializers.IntegerField(min_value=1)
@@ -641,7 +642,6 @@ class CampaignCostCalculationSerializer(serializers.Serializer):
     vehicle_type_id = serializers.IntegerField()
     design_type = serializers.ChoiceField(choices=["READY_TEMPLATE", "UPLOADED_DESIGN", "CUSTOM_DESIGN"])
     area_type = serializers.ChoiceField(choices=["FREE", "SUGGESTED_ROUTE", "CIRCLE"])
-
 
 class CampaignInvoiceReadSerializer(serializers.ModelSerializer):
     campaign_title = serializers.CharField(source='campaign.title', read_only=True)
@@ -672,7 +672,6 @@ class CampaignInvoiceReadSerializer(serializers.ModelSerializer):
             "tax": str(obj.tax_amount),
             "total": str(obj.total_price)
         }
-
 
 class CampaignInvoiceCreateSerializer(serializers.ModelSerializer):
     campaign = serializers.PrimaryKeyRelatedField(
@@ -729,22 +728,18 @@ class CampaignInvoiceCreateSerializer(serializers.ModelSerializer):
         )
         return invoice
 
-
 class PaymentRequestSerializer(serializers.Serializer):
     invoice_id = serializers.IntegerField(required=True)
-
 
 class PaymentVerifySerializer(serializers.Serializer):
     authority = serializers.CharField(max_length=200, required=True)
     status = serializers.CharField(max_length=10, required=True)  # OK / NOK
-
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentTransaction
         fields = ['id', 'invoice', 'authority', 'ref_id', 'amount', 'status', 'created_at']
         read_only_fields = fields
-
 
 class AvailableCampaignSerializer(serializers.ModelSerializer):
     brand_name = serializers.CharField(source='brand_name.name', read_only=True)

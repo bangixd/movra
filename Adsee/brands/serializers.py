@@ -6,7 +6,7 @@ class BrandListSerializer(serializers.ModelSerializer):
     """برای نمایش لیست برندها (خلاصه)"""
     class Meta:
         model = Brand
-        fields = ['id', 'name', 'slug', 'logo', 'is_active']
+        fields = ['id', 'name', 'slug', 'logo', 'phone', 'is_active']
 
 
 class BrandDetailSerializer(serializers.ModelSerializer):

@@ -5,6 +5,15 @@ from django.contrib.gis.db import models as geomodels
 from django.core.exceptions import ValidationError
 
 
+class CampaignGoal(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
 class Campaign(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT"
@@ -14,6 +23,8 @@ class Campaign(models.Model):
         PAUSED = "PAUSED"
         COMPLETED = "COMPLETED"
         REJECTED = "REJECTED"
+
+    goal = models.ForeignKey(CampaignGoal, on_delete=models.SET_NULL, null=True, blank=True)
 
     client = models.ForeignKey(
         "clients.ClientProfile",
@@ -29,9 +40,6 @@ class Campaign(models.Model):
     )
 
     description = models.TextField(blank=True)
-
-    start_date = models.DateField()
-    end_date = models.DateField()
 
     status = models.CharField(
         max_length=50,
@@ -59,7 +67,6 @@ class Campaign(models.Model):
             and self.start_date <= now.date() <= self.end_date
         )
 
-
 class CampaignSetting(models.Model):
     campaign = models.OneToOneField('Campaign', on_delete=models.CASCADE, related_name='setting')
 
@@ -74,7 +81,6 @@ class CampaignSetting(models.Model):
         related_name="campaigns"
     )
 
-
 class Template(models.Model):
     name = models.CharField(max_length=100)
     variant = models.CharField(max_length=50, unique=True)
@@ -83,6 +89,14 @@ class Template(models.Model):
     def __str__(self):
         return self.name
 
+class BannerType(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
 
 class CampaignDesign(models.Model):
     class DesignType(models.TextChoices):
@@ -95,6 +109,8 @@ class CampaignDesign(models.Model):
         IN_PROGRESS = "IN_PROGRESS", "In_Progress"
         COMPLETED = "COMPLETED", "Completed"
         REJECTED = "REJECTED", "Rejected"
+
+    banner_type = models.ForeignKey(BannerType, on_delete=models.SET_NULL, null=True, blank=True)
 
     campaign = models.OneToOneField(
         Campaign,
@@ -170,15 +186,12 @@ class CampaignDesign(models.Model):
     def __str__(self):
         return f"{self.campaign.slogan} - {self.design_type}"
 
-
 def product_image_upload_path(self, filename):
     return f'products/campaign_{self.campaign_design.campaign}/{filename}'
-
 
 class ProductImage(models.Model):
     campaign_design = models.ForeignKey(CampaignDesign, on_delete=models.CASCADE, related_name='product_images')
     image = models.ImageField(upload_to=product_image_upload_path)
-
 
 class CampaignArea(geomodels.Model):
     class AreaType(models.TextChoices):
@@ -300,115 +313,24 @@ class CampaignArea(geomodels.Model):
 
         return None
 
-
-class CampaignCost(models.Model):
-
-    class Status(models.TextChoices):
-        DRAFT = "DRAFT", "Draft"
-        CONFIGURING = "CONFIGURING", "Configuring"
-        READY_FOR_PAYMENT = "READY_FOR_PAYMENT", "Ready For Payment"
-        PENDING_PAYMENT = "PENDING_PAYMENT", "Pending Payment"
-        PAID = "PAID", "Paid"
-        EXPIRED = "EXPIRED", "Expired"
-        CANCELED = "CANCELED", "Canceled"
-
-    campaign = models.OneToOneField(
-        "Campaign",
-        on_delete=models.CASCADE,
-        related_name="cost"
-    )
-
-    # مرحله اجرا
-    drivers_count = models.PositiveIntegerField(default=1)
-    days_count = models.PositiveIntegerField(default=1)
-    hours_per_day = models.PositiveIntegerField(default=1)
-    vehicle_type = models.ForeignKey(
-        "vehicles.VehicleType",
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True
-    )
-
-    # انتخاب طراحی
-    design_type = models.CharField(max_length=30, null=True, blank=True)
-
-    # انتخاب محدوده
-    area_type = models.CharField(max_length=30, null=True, blank=True)
-
-    # جمع‌ها
-    subtotal_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    total_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-
-    status = models.CharField(
-        max_length=30,
-        choices=Status.choices,
-        default=Status.DRAFT
-    )
-
-    payment_expires_at = models.DateTimeField(null=True, blank=True)
-    paid_at = models.DateTimeField(null=True, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def mark_pending_payment(self, expire_minutes=30):
-        self.status = self.Status.PENDING_PAYMENT
-        self.payment_expires_at = timezone.now() + timedelta(minutes=expire_minutes)
-        self.save(update_fields=["status", "payment_expires_at"])
-
-    def mark_paid(self):
-        self.status = self.Status.PAID
-        self.paid_at = timezone.now()
-        self.save(update_fields=["status", "paid_at"])
-
-    def mark_expired(self):
-        self.status = self.Status.EXPIRED
-        self.save(update_fields=["status"])
-
-    def is_expired(self):
-        return (
-            self.status == self.Status.PENDING_PAYMENT
-            and self.payment_expires_at
-            and timezone.now() > self.payment_expires_at
-        )
-
-    def __str__(self):
-        return f"Cost for Campaign #{self.campaign_id}"
-
-
-class CampaignCostItem(models.Model):
-    class ItemType(models.TextChoices):
-        EXECUTION = "EXECUTION", "Execution"
-        DESIGN = "DESIGN", "Design"
-        AREA = "AREA", "Area"
-        DISCOUNT = "DISCOUNT", "Discount"
-        TAX = "TAX", "Tax"
-
-    campaign_cost = models.ForeignKey(
-        CampaignCost,
-        on_delete=models.CASCADE,
-        related_name="items"
-    )
-
-    item_type = models.CharField(max_length=20, choices=ItemType.choices)
-    title = models.CharField(max_length=255)
-
-    quantity = models.DecimalField(max_digits=14, decimal_places=2, default=1)
-    unit_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    total_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-
-    meta = models.JSONField(default=dict, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        self.total_price = (self.quantity or 0) * (self.unit_price or 0)
-        super().save(*args, **kwargs)
-
-
 class CampaignPricingRule(models.Model):
+    """
+    DESIGN_BASE_COST
+
+    DESIGN_CUSTOM_COST
+
+    DESIGN_UPLOAD_COST
+
+    AREA_CIRCLE_COST_PER_KM
+
+    AREA_SUGGESTED_ROUTE_COST_PER_KM
+
+    AREA_FREE_COST_MULTIPLIER
+
+    DRIVER_COST_PER_DAY
+
+    اینها کلید های اجباری هستند که ادمین باید انها را مقدار دهی کند
+    """
     class ValueType(models.TextChoices):
         DECIMAL = "DECIMAL", "Decimal"
         INTEGER = "INTEGER", "Integer"
@@ -464,7 +386,6 @@ class CampaignPricingRule(models.Model):
         elif self.value_type == self.ValueType.JSON:
             self.json_value = value
 
-
 class CampaignInvoice(models.Model):
 
     class Status(models.TextChoices):
@@ -473,16 +394,10 @@ class CampaignInvoice(models.Model):
         EXPIRED = "EXPIRED", "Expired"
         VOID = "VOID", "Void"
 
-    campaign = models.OneToOneField(
+    campaign = models.ForeignKey(
         "Campaign",
         on_delete=models.CASCADE,
-        related_name="invoice"
-    )
-
-    campaign_cost = models.ForeignKey(
-        CampaignCost,
-        on_delete=models.PROTECT,
-        related_name="invoices"
+        related_name="invoices"  # جمع بسته شود
     )
 
     invoice_number = models.CharField(max_length=50, unique=True)
@@ -500,6 +415,11 @@ class CampaignInvoice(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def is_expired(self):
+        return self.status == self.Status.EXPIRED or (
+                self.status == self.Status.ISSUED and self.expires_at and timezone.now() > self.expires_at
+        )
 
 class PaymentTransaction(models.Model):
     class Status(models.TextChoices):
