@@ -3,14 +3,13 @@ import random
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
-# from django.core import cache
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework import status, viewsets, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from utils import send_otp_sms
+from services.tasks import send_otp_sms_task
 from .serializers import (UserSerializer, OTPRequestSerializer, OTPVerifySerializer)
 from .models import OTP
 from permissions import IsOwnerOrAdmin
@@ -50,35 +49,6 @@ class RequestOTPView(APIView):
             identifier = serializer.validated_data['identifier']
             purpose = serializer.validated_data['purpose']
 
-            # # --- Cache logic for rate limiting ---
-            # cache_key_base = f"otp:{purpose}:{identifier}"
-            # attempts_key = f"{cache_key_base}:attempts"
-            # cooldown_key = f"{cache_key_base}:cooldown"
-            #
-            # # Check cooldown period
-            # cooldown_active = cache.get(cooldown_key)
-            # if cooldown_active:
-            #     return Response(
-            #         {"detail": "Please wait a moment before trying again."},
-            #         status=status.HTTP_429_TOO_MANY_REQUESTS
-            #     )
-            #
-            # # Check number of attempts (e.g., max 3 attempts in 5 minutes)
-            # max_attempts = 3
-            # attempt_window_seconds = 120 # 5 minutes
-            # current_attempts = cache.get(attempts_key, 0)
-            #
-            # if current_attempts >= max_attempts:
-            #     # Start cooldown if max attempts reached
-            #     cache.set(cooldown_key, True, timeout=300) # 10 minutes cooldown
-            #     return Response(
-            #         {"detail": "Too many attempts. Please try again later."},
-            #         status=status.HTTP_429_TOO_MANY_REQUESTS
-            #     )
-            #
-            # # Increment attempt count
-            # cache.set(attempts_key, current_attempts + 1, timeout=attempt_window_seconds)
-
             # حذف OTP های قدیمی برای همین identifier و purpose (اگر باشد)
             OTP.objects.filter(identifier=identifier, purpose=purpose, used=False, expires_at__gt=timezone.now()).delete()
 
@@ -103,7 +73,7 @@ class RequestOTPView(APIView):
 
             # ارسال SMS
             try:
-                response = send_otp_sms(identifier, otp_code)
+                send_otp_sms_task.delay(phone=identifier, code=otp_instance.code)
             except Exception as e:
                 # در اینجا باید خطا را لاگ کنید و یک پاسخ مناسب بدهید
                 # این مرحله نباید باعث شود OTP ذخیره نشود

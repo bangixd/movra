@@ -1,5 +1,10 @@
 from celery import shared_task
 from services.analytics_client import AnalyticsServiceClient
+from services.sms_client import MeliPayamakClient
+from clients.models import ClientDocument
+from trips.models import Trip, TripAnalysis
+import time
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,8 +36,6 @@ def process_driver_document(self, document_id):
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def process_client_document(self, document_id):
-    from clients.models import ClientDocument
-    import time
 
     try:
         doc = ClientDocument.objects.get(id=document_id)
@@ -96,7 +99,6 @@ def register_vehicle_task(self, vehicle_plate, display_name,
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
 def update_earnings_task(self, trip_id):
     """واکشی درآمد از سرویس Analytics و ذخیره در Trip"""
-    from trips.models import Trip
     try:
         trip = Trip.objects.get(id=trip_id)
     except Trip.DoesNotExist:
@@ -148,7 +150,6 @@ def forward_batch_locations_task(self, trip_id, vehicle_plate, campaign_id, poin
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
 def fetch_and_store_trip_analysis(self, trip_id):
-    from trips.models import Trip, TripAnalysis
     try:
         trip = Trip.objects.get(id=trip_id)
     except Trip.DoesNotExist:
@@ -186,3 +187,12 @@ def fetch_and_store_trip_analysis(self, trip_id):
             'analysis_run_id': run_id,
         }
     )
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=10)
+def send_otp_sms_task(self, phone, code):
+    client = MeliPayamakClient()
+    message = f'کد تأیید شما: {code}\nلغو11'
+    success, status = client.send_sms(phone, message)
+    if not success:
+        raise self.retry(exc=Exception(f"SMS failed: {status}"))

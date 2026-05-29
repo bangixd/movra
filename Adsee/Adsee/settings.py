@@ -258,3 +258,7 @@ CELERY_TIMEZONE = 'Asia/Tehran'
 ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID")          # از زرین‌پال دریافت کن
 ZARINPAL_SANDBOX = os.getenv("ZARINPAL_SANDBOX")                             # در محیط واقعی False کن
 ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL")   # آدرس بازگشت
+
+# MeliPayamak
+MELIPAYAMAK_URL = os.environ.get('MELIPAYAMAK_URL', 'url')
+MELIPAYAMAK_FROM = os.environ.get('MELIPAYAMAK_FROM', '5000xxx')

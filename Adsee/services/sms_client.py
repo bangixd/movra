@@ -1,0 +1,38 @@
+import requests
+from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+class MeliPayamakClient:
+    def __init__(self):
+        self.base_url = 'https://console.melipayamak.com/api/send'
+        self.from_number = settings.MELIPAYAMAK_FROM
+
+    def send_sms(self, to: str, message: str):
+        """
+        ارسال یک پیامک تکی
+        to: شماره گیرنده (مثلاً '09120001122')
+        message: متن پیامک
+        """
+        payload = {
+            'fromNumber': self.from_number,
+            'toNumbers': to,
+            'messageContent': message,
+        }
+        try:
+            response = requests.post(
+                f'{self.base_url}/simple/8beb8f6593f140b7baaf9d581c5992d9',
+                json=payload,
+                timeout=10
+            )
+            result = response.json()
+            if result.get('RetStatus') == 1:
+                logger.info(f"SMS sent to {to}")
+                return True, result.get('RetStatus')
+            else:
+                logger.error(f"SMS failed: {result.get('StrRetStatus')}")
+                return False, result.get('StrRetStatus')
+        except Exception as e:
+            logger.error(f"SMS sending exception: {e}")
+            return False, str(e)
