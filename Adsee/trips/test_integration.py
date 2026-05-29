@@ -52,7 +52,7 @@ class FullFlowIntegrationTest(TestCase):
         )
         self.driver_profile = DriverProfile.objects.create(
             user=self.driver_user,
-            full_name='Driver Ali',
+            first_name='Driver Ali',
             national_id='0987654321'
         )
         self.driver_api = APIClient()

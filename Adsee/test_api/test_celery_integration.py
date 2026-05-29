@@ -38,7 +38,7 @@ print(f"Campaign created, end_date={campaign.end_date}")
 # ۵. راننده و خودرو
 from drivers.models import DriverProfile
 driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
-driver_profile = DriverProfile.objects.create(user=driver_user, full_name='Real Driver', national_id='0987654321')
+driver_profile = DriverProfile.objects.create(user=driver_user, first_name='Real', last_name='Driver', national_id='0987654321')
 
 from vehicles.models import Vehicle
 vehicle = Vehicle.objects.create(

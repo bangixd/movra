@@ -16,9 +16,9 @@ from django.contrib.gis.geos import Point, Polygon
 class TripModelTest(TestCase):
     def setUp(self):
         self.driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
-        self.driver = DriverProfile.objects.create(user=self.driver_user, full_name='Ali', national_id='1111111111')
+        self.driver = DriverProfile.objects.create(user=self.driver_user, first_name='Ali', national_id='1111111111')
         self.other_driver_user = User.objects.create_user(phone='09123333333', role=User.Role.DRIVER)
-        self.other_driver = DriverProfile.objects.create(user=self.other_driver_user, full_name='Hossein', national_id='2222222222')
+        self.other_driver = DriverProfile.objects.create(user=self.other_driver_user, first_name='Hossein', national_id='2222222222')
 
         self.client_user = User.objects.create_user(phone='09124444444', role=User.Role.CLIENT)
         self.client = ClientProfile.objects.create(user=self.client_user, full_name='Sara', national_id='3333333333')
@@ -66,7 +66,7 @@ class TripModelTest(TestCase):
         Trip.objects.create(driver=self.driver, campaign=self.campaign, vehicle=self.vehicle, status=Trip.Status.ACTIVE)
         Trip.objects.create(driver=self.other_driver, campaign=self.campaign, vehicle=self.vehicle2, status=Trip.Status.ACTIVE)
         third_driver_user = User.objects.create_user(phone='09125555555', role=User.Role.DRIVER)
-        third_driver = DriverProfile.objects.create(user=third_driver_user, full_name='Third', national_id='5555555555')
+        third_driver = DriverProfile.objects.create(user=third_driver_user, first_name='Third', national_id='5555555555')
         third_vehicle = Vehicle.objects.create(
             driver=third_driver, vehicle_type=self.vehicle_type,
             plate_number='11C444D55', banner_max_width_cm=100, banner_max_height_cm=50
@@ -79,7 +79,7 @@ class TripAPITest(TestCase):
     def setUp(self):
         # ساخت داده‌های مشابه بالا
         self.driver_user = User.objects.create_user(phone='09126666666', role=User.Role.DRIVER)
-        self.driver = DriverProfile.objects.create(user=self.driver_user, full_name='TestDriver', national_id='8888888888')
+        self.driver = DriverProfile.objects.create(user=self.driver_user, first_name='TestDriver', national_id='8888888888')
         self.client_user = User.objects.create_user(phone='09127777777', role=User.Role.CLIENT)
         self.client = ClientProfile.objects.create(user=self.client_user, full_name='TestClient', national_id='7777777777')
         self.brand = Brand.objects.create(client=self.client, name='TestBrand', slug='testbrand')

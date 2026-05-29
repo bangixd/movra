@@ -12,6 +12,8 @@ class ClientProfileAPITest(TestCase):
         self.other_client.save()
         self.api = APIClient()
         self.api.force_authenticate(user=self.client_user)
+        response = self.api.options('/api/clients/documents/')
+        print(response['Allow'])  # باید POST, GET, OPTIONS, ... را نشان دهد
 
         self.profile = ClientProfile.objects.create(
             user=self.client_user,

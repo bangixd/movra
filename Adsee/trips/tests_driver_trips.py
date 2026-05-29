@@ -2,12 +2,16 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.utils import timezone
 from datetime import date, timedelta
-from accounts.models import User, DriverProfile, ClientProfile
+from accounts.models import User
+from drivers.models import DriverProfile
+from clients.models import ClientProfile
 from brands.models import Brand
 from vehicles.models import VehicleType, Vehicle
 from campaigns.models import Campaign, CampaignSetting
 from trips.models import Trip, TripAnalysis
-from wallet.models import Wallet, Transaction
+from wallets.models import Wallet, Transaction
+from decimal import Decimal
+
 
 class DriverTripAPITest(TestCase):
     def setUp(self):
@@ -59,7 +63,13 @@ class DriverTripAPITest(TestCase):
         self.analysis = TripAnalysis.objects.create(
             trip=self.completed_trip,
             distance_km=15.5,
-            raw_response={'penalties': {'night_factor': 0.9, 'long_stop': 0.95}}
+            raw_response={
+                'night_income_factor': 0.9,
+                'long_stop_income_factor': 0.95,
+                'suspicious_stop_penalty_factor': 0.7,
+                'invalid_data_penalty_factor': 0.25,
+                'total_penalty_amount': 5000
+            }
         )
 
         self.api = APIClient()
@@ -82,7 +92,7 @@ class DriverTripAPITest(TestCase):
     def test_trip_detail_completed(self):
         response = self.api.get(f'/api/trips/{self.completed_trip.id}/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['paid_amount'], '125000.00')
+        self.assertEqual(response.data['paid_amount'], Decimal('125000.00'))
         self.assertIn('deductions', response.data)
         self.assertEqual(response.data['distance_km'], 15.5)
 

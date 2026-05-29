@@ -7,11 +7,9 @@ from rest_framework import viewsets, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from .serializers import ClientProfileSerializer, ClientDocumentSerializer
 from .models import ClientProfile, ClientDocument
-from permissions import IsClientUser, IsOwnerOrAdmin
+from permissions import IsClientUser, IsClientOrAdmin, IsOwnerOrAdmin
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
-
 
 
 class ClientProfileViewSet(viewsets.ModelViewSet):
@@ -20,7 +18,7 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = ClientProfile.objects.all()
     serializer_class = ClientProfileSerializer
-    permission_classes = [IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsClientOrAdmin, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
 
@@ -58,12 +56,12 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
 
 class ClientDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = ClientDocumentSerializer
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsClientOrAdmin]
 
-    # def get_queryset(self):
-    #     if self.request.user.is_staff:
-    #         return ClientDocument.objects.all()
-    #     return ClientDocument.objects.filter(user=self.request.user)
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return ClientDocument.objects.all()
+        return ClientDocument.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

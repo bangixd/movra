@@ -6,12 +6,8 @@ from wallets.models import models, ReferralReward
 from .models import DriverProfile, DriverDocument
 from .serializers import DriverProfileSerializer, DriverDocumentSerializer
 from rest_framework.permissions import IsAuthenticated, BasePermission
+from permissions import IsDriverOrAdmin
 
-class IsDriverOrAdmin(BasePermission):
-    def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        return request.user.is_staff or getattr(request.user, 'role', None) == 'DRIVER'
 
 class DriverProfileViewSet(viewsets.ModelViewSet):
     serializer_class = DriverProfileSerializer

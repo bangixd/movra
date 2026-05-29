@@ -39,16 +39,21 @@ class IsPrintShopUser(permissions.BasePermission):
 
 
 class IsClientOrAdmin(permissions.BasePermission):
+    """
+    دسترسی برای کاربران ادمین یا کاربرانی که نقش CLIENT دارند.
+    """
     def has_permission(self, request, view):
-        return request.user.is_authenticated and (
-            request.user.is_staff or hasattr(request.user, 'client_profile')
-        )
+        if not request.user.is_authenticated:
+            return False
+        # ادمین باشد یا نقش CLIENT داشته باشد
+        return request.user.is_staff or request.user.role == 'CLIENT'
 
-    def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
-            return True
-        # کلاینت صاحب برند کمپین
-        return obj.campaign.brand.client == request.user
+
+class IsDriverOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.is_staff or getattr(request.user, 'role', None) == 'DRIVER'
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):

@@ -32,7 +32,7 @@ class TripAnalysisAPITest(TestCase):
         )
         # راننده و خودرو
         self.driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
-        self.driver_profile = DriverProfile.objects.create(user=self.driver_user, full_name='D', national_id='0987654321')
+        self.driver_profile = DriverProfile.objects.create(user=self.driver_user, first_name='D', national_id='0987654321')
         self.vehicle = Vehicle.objects.create(
             driver=self.driver_profile, vehicle_type=self.vehicle_type,
             plate_number='12A345B67', banner_max_width_cm=100, banner_max_height_cm=50
