@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "notifications",
     "wallets",
     "support",
+    "blogs",
 
 ]
 

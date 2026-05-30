@@ -51,6 +51,8 @@ urlpatterns = [
     path('api/notifications/', include('notifications.urls')),
     path('api/wallets/', include('wallets.urls')),
     path('api/support/', include('support.urls')),
+    path('api/blogs/', include('blogs.urls')),
+
 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
