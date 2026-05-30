@@ -9,6 +9,8 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryFi
 from .utils import generate_invoice_number
 from django.utils import timezone
 from print_shops.serializers import PrintShopProfileSerializer
+from trips.models import TripAnalysis, DriverLocation, Trip
+from drivers.models import DriverProfile
 
 
 class BrandMiniSerializer(serializers.ModelSerializer):
@@ -770,3 +772,78 @@ class CampaignPackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignPackage
         fields = '__all__'
+
+class DriverOnCampaignSerializer(serializers.Serializer):
+    driver_id = serializers.IntegerField(source='driver.id')
+    driver_name = serializers.CharField(source='driver.full_name')
+    driver_avatar = serializers.ImageField(source='driver.avatar')
+    car_model = serializers.CharField(source='vehicle.vehicle_model')
+    sticker_image = serializers.ImageField()  # از Trip
+    driver_car_image = serializers.ImageField()
+    trip_status = serializers.CharField(source='status')
+    active_seconds = serializers.SerializerMethodField()
+    last_location = serializers.SerializerMethodField()
+    zone_name = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+
+    def get_active_seconds(self, obj):
+        # obj یک Trip است
+        if hasattr(obj, 'analysis') and obj.analysis:
+            return obj.analysis.active_seconds
+        return 0
+
+    def get_last_location(self, obj):
+        last_loc = DriverLocation.objects.filter(trip=obj).order_by('-timestamp').first()
+        if last_loc:
+            return {
+                'lat': last_loc.point.y,
+                'lng': last_loc.point.x,
+                'timestamp': last_loc.timestamp.isoformat()
+            }
+        return None
+
+    def get_zone_name(self, obj):
+        area = obj.campaign.area
+        if area and area.city:
+            return area.city.name
+        return None
+
+    def get_rating(self, obj):
+        # می‌توان یک امتیاز فرضی یا میانگین exposure برگرداند
+        return 0.0
+
+class ClientCampaignSerializer(serializers.ModelSerializer):
+    brand_name = serializers.CharField(source='brand_name.name')
+    region = serializers.SerializerMethodField()
+    banner_type = serializers.CharField(source='design.banner_type.name', allow_null=True)
+    print_shop_name = serializers.CharField(source='design.print_shop.shop_name', allow_null=True)
+    print_shop_address = serializers.CharField(source='design.print_shop.address', allow_null=True)
+    active_drivers = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Campaign
+        fields = [
+            'id', 'slogan', 'brand_name', 'region', 'status',
+            'start_date', 'end_date', 'banner_type',
+            'print_shop_name', 'print_shop_address',
+            'active_drivers'
+        ]
+
+    def get_region(self, obj):
+        area = obj.area if hasattr(obj, 'area') else None
+        if area:
+            if area.area_type == 'CIRCLE' and area.neighborhood:
+                return f"{area.city.name} - {area.neighborhood.name}"
+            elif area.area_type == 'SUGGESTED_ROUTE' and area.suggested_route:
+                return f"{area.city.name} - مسیر پیشنهادی"
+            elif area.area_type == 'FREE_AREA':
+                return area.city.name if area.city else "کل شهر"
+        return None
+
+    def get_active_drivers(self, obj):
+        # فقط سفرهای فعال
+        trips = Trip.objects.filter(
+            campaign=obj,
+            status__in=[Trip.Status.ACTIVE, Trip.Status.PAUSED]
+        ).select_related('driver', 'vehicle', 'campaign__area__city')
+        return DriverOnCampaignSerializer(trips, many=True).data

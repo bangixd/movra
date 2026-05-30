@@ -4,9 +4,9 @@ from rest_framework.throttling import UserRateThrottle
 from rest_framework import viewsets, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from .serializers import ClientProfileSerializer, ClientDocumentSerializer, ClientLocationSerializer
-from .models import ClientProfile, ClientDocument, CampaignPricingRule
-from campaigns.models import CampaignPackage, Campaign, CampaignInvoice
-from campaigns.serializers import CampaignPackageSerializer
+from .models import ClientProfile, ClientDocument
+from campaigns.models import CampaignPackage, Campaign, CampaignInvoice, CampaignPricingRule
+from campaigns.serializers import CampaignPackageSerializer, ClientCampaignSerializer
 from notifications.models import Notification
 from permissions import IsClientUser, IsClientOrAdmin, IsOwnerOrAdmin
 from rest_framework.decorators import action, api_view, permission_classes
@@ -15,8 +15,9 @@ from services.neshan_client import NeshanClient
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Sum
-from trips.models import TripAnalysis
+from trips.models import TripAnalysis, HourlyActivity, Trip
 from django.utils import timezone
+from rest_framework.generics import ListAPIView
 
 
 
@@ -64,14 +65,6 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
                 "lng": lng
             }
         })
-
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        # self.process_kyc(instance)
-
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        # self.process_kyc(instance)
 
     def perform_create(self, serializer):
         # اگر در درخواست، user مشخص شده باشد، از آن استفاده کن
@@ -184,9 +177,15 @@ class ClientReportSummaryView(APIView):
     def get(self, request):
         user = request.user
         client = user.client_profile
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
 
         # کمپین‌های این کلاینت
         campaigns = Campaign.objects.filter(brand_name__client=client)
+        if start_date:
+            campaigns = campaigns.filter(start_date__gte=start_date)
+        if end_date:
+            campaigns = campaigns.filter(end_date__lte=end_date)
 
         total_campaigns = campaigns.count()
 
@@ -219,32 +218,48 @@ class ClientPeakHoursView(APIView):
     def get(self, request):
         user = request.user
         client = user.client_profile
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
 
-        # تحلیل‌های سفرهای تکمیل‌شدهٔ کلاینت
-        analyses = TripAnalysis.objects.filter(
-            trip__campaign__brand_name__client=client,
-            trip__status='COMPLETED'
-        ).select_related('trip')
+        # فیلتر کمپین‌های کلاینت
+        campaigns = Campaign.objects.filter(brand_name__client=client)
+        if start_date:
+            campaigns = campaigns.filter(start_date__gte=start_date)
+        if end_date:
+            campaigns = campaigns.filter(end_date__lte=end_date)
 
-        # آرایه‌ای ۲۴ تایی برای هر ساعت (صفر اولیه)
+        # سفرهای تکمیل‌شدهٔ این کمپین‌ها
+        trips = Trip.objects.filter(
+            campaign__in=campaigns,
+            status=Trip.Status.COMPLETED
+        )
+
+        # چک کنیم آیا داده‌های HourlyActivity وجود دارد؟
+        has_hourly_data = HourlyActivity.objects.filter(trip__in=trips).exists()
+
         hourly_activity = [0] * 24
+        if has_hourly_data:
+            # تجمیع از روی HourlyActivity
+            aggregates = HourlyActivity.objects.filter(trip__in=trips).values('hour').annotate(
+                total_seconds=Sum('active_seconds')
+            )
+            for agg in aggregates:
+                hourly_activity[agg['hour']] = agg['total_seconds']
+        else:
+            # روش تقریبی (همانطور که قبلاً بود)
+            analyses = TripAnalysis.objects.filter(trip__in=trips)
+            for analysis in analyses:
+                if analysis.active_seconds > 0:
+                    per_hour = analysis.active_seconds / 24.0
+                    for i in range(24):
+                        hourly_activity[i] += per_hour
 
-        for analysis in analyses:
-            if analysis.active_seconds > 0:
-                # میانگین توزیع بر روی ۲۴ ساعت (تقریبی)
-                per_hour = analysis.active_seconds / 24.0
-                for i in range(24):
-                    hourly_activity[i] += per_hour
-
-        # تبدیل به لیست دیکشنری برای نمودار
         chart_data = [
             {'hour': h, 'seconds': round(hourly_activity[h], 1)}
             for h in range(24)
         ]
 
-        return Response({
-            'chart_data': chart_data
-        })
+        return Response({'chart_data': chart_data})
 
 class BillboardComparisonView(APIView):
     permission_classes = [IsAuthenticated, IsClientUser]
@@ -252,11 +267,19 @@ class BillboardComparisonView(APIView):
     def get(self, request):
         user = request.user
         client = user.client_profile
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        campaigns = Campaign.objects.filter(brand_name__client=client)
+        if start_date:
+            campaigns = campaigns.filter(start_date__gte=start_date)
+        if end_date:
+            campaigns = campaigns.filter(end_date__lte=end_date)
 
         # مجموع تخمین نمایش‌ها
         total_impressions = TripAnalysis.objects.filter(
-            trip__campaign__brand_name__client=client,
-            trip__status='COMPLETED'
+            trip__campaign__in=campaigns,           # استفاده از کمپین‌های فیلترشده
+            trip__status=Trip.Status.COMPLETED
         ).aggregate(total=Sum('estimated_impressions'))['total'] or 0
 
         # خواندن عدد مبنا از قوانین (مثلاً کلید BILLBOARD_DAILY_IMPRESSIONS)
@@ -272,6 +295,34 @@ class BillboardComparisonView(APIView):
             'ratio': ratio,
             'message': f'تأثیر تبلیغات شما معادل {ratio} روز نمایش بیلبورد است.'
         })
+
+class ClientCampaignListView(ListAPIView):
+    serializer_class = ClientCampaignSerializer
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def get_queryset(self):
+        user = self.request.user
+        client = user.client_profile
+        queryset = Campaign.objects.filter(brand_name__client=client)
+
+        status_filter = self.request.query_params.get('status', 'all')
+        if status_filter == 'pending':
+            queryset = queryset.filter(status__in=[
+                Campaign.Status.DRAFT,
+                Campaign.Status.WAITING_FOR_DESIGN,
+                Campaign.Status.WAITING_FOR_PAYMENT
+            ])
+        elif status_filter == 'active':
+            queryset = queryset.filter(status__in=[
+                Campaign.Status.ACTIVE,
+                Campaign.Status.PAUSED
+            ])
+        elif status_filter == 'completed':
+            queryset = queryset.filter(status=Campaign.Status.COMPLETED)
+        elif status_filter == 'cancelled':
+            queryset = queryset.filter(status=Campaign.Status.REJECTED)
+
+        return queryset.order_by('-created_at')
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsClientUser])

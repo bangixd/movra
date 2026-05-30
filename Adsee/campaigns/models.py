@@ -329,7 +329,8 @@ class CampaignPricingRule(models.Model):
 
     DRIVER_COST_PER_DAY
 
-    اینها کلید های اجباری هستند که ادمین باید انها را مقدار دهی کند
+    BILLBOARD_DAILY_IMPRESSIONS
+    اینها کلید های اجباری و پایه هستند که ادمین باید انها را مقدار دهی کند
     """
     class ValueType(models.TextChoices):
         DECIMAL = "DECIMAL", "Decimal"

@@ -5,6 +5,8 @@ from clients.models import ClientDocument
 from trips.models import Trip, TripAnalysis
 from campaigns.models import CampaignInvoice
 from django.utils import timezone
+from trips.models import Trip, TripAnalysis, HourlyActivity
+from datetime import datetime, timezone as dt_timezone
 import time
 
 import logging
@@ -152,6 +154,7 @@ def forward_batch_locations_task(self, trip_id, vehicle_plate, campaign_id, poin
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
 def fetch_and_store_trip_analysis(self, trip_id):
+
     try:
         trip = Trip.objects.get(id=trip_id)
     except Trip.DoesNotExist:
@@ -166,16 +169,17 @@ def fetch_and_store_trip_analysis(self, trip_id):
 
     client = AnalyticsServiceClient()
     try:
-        # گرفتن خلاصه
         summary = client.get_analysis_summary(vehicle_id, start_ts, end_ts)
-        # ایجاد analysis-run و گرفتن run_id
+        # فرض می‌کنیم که `get_analysis_full` هم برای گرفتن buckets صدا زده می‌شود
+        # یا می‌توانید از همان summary که شاید buckets داشته باشد استفاده کنید
+        full_data = client.get_analysis_full(vehicle_id, start_ts, end_ts)
         run_result = client.create_analysis_run(vehicle_id, start_ts, end_ts)
         run_id = run_result.get('run_id')
     except Exception as exc:
         raise self.retry(exc=exc)
 
-    # ذخیره در TripAnalysis
-    TripAnalysis.objects.update_or_create(
+    # ذخیره TripAnalysis
+    analysis, created = TripAnalysis.objects.update_or_create(
         trip=trip,
         defaults={
             'active_seconds': summary.get('active_seconds', 0),
@@ -185,11 +189,34 @@ def fetch_and_store_trip_analysis(self, trip_id):
             'data_quality': summary.get('data_quality', 0),
             'confidence': summary.get('confidence', 0),
             'avg_traffic_ratio': summary.get('avg_traffic_ratio', 0),
-            'raw_response': summary,
+            'raw_response': full_data,   # ذخیره کامل پاسخ
             'analysis_run_id': run_id,
         }
     )
 
+    # پردازش buckets برای HourlyActivity
+    buckets = full_data.get('buckets', [])   # یا اگر در summary باشد
+    if buckets:
+        # حذف داده‌های قبلی برای این سفر (در صورت به‌روزرسانی)
+        HourlyActivity.objects.filter(trip=trip).delete()
+
+        hourly_dict = {h: 0.0 for h in range(24)}
+        for bucket in buckets:
+            ts = bucket.get('timestamp')
+            if ts:
+                dt = datetime.fromtimestamp(ts, tz=dt_timezone.utc)
+                hour = dt.hour
+                hourly_dict[hour] += bucket.get('active_seconds', 0)
+
+        # ساخت رکوردهای HourlyActivity
+        for hour, secs in hourly_dict.items():
+            if secs > 0:
+                HourlyActivity.objects.create(
+                    trip=trip,
+                    hour=hour,
+                    active_seconds=secs
+                )
+    # اگر buckets وجود نداشت، هیچ کاری نمی‌کنیم (گزارش peak hours از همان روش تقریبی قبلی استفاده می‌کند)
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=10)
 def send_otp_sms_task(self, phone, code):
@@ -199,8 +226,6 @@ def send_otp_sms_task(self, phone, code):
     if not success:
         raise self.retry(exc=Exception(f"SMS failed: {status}"))
 
-
-# services/tasks.py
 @shared_task
 def expire_pending_invoices():
     now = timezone.now()

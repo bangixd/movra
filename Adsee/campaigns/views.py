@@ -253,7 +253,6 @@ class PaymentRequestView(APIView):
 
         # ۱. محاسبهٔ هزینه
         cost = calculate_campaign_cost(campaign)
-        snapshot = json.loads(json.dumps(cost, cls=DjangoJSONEncoder))
         total = cost['total']
 
         # یافتن فاکتور ISSUED موجود
