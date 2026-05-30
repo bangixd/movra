@@ -3,8 +3,8 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from .models import Brand, BrandCategory
 from rest_framework.decorators import action
-from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer, AdminBrandCategorySerializer
-from permissions import IsClientUser, IsAdminUser
+from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer
+from permissions import IsClientUser
 
 
 class BrandViewSet(viewsets.ModelViewSet):
@@ -43,8 +43,3 @@ class BrandCategoryListView(viewsets.ReadOnlyModelViewSet):
     queryset = BrandCategory.objects.filter(is_active=True)
     serializer_class = BrandCategorySerializer
     permission_classes = [IsAuthenticated]
-
-class AdminBrandCategoryViewSet(viewsets.ModelViewSet):
-    queryset = BrandCategory.objects.all()
-    serializer_class = AdminBrandCategorySerializer
-    permission_classes = [IsAdminUser]

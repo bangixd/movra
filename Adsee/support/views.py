@@ -1,8 +1,8 @@
 from rest_framework import viewsets, permissions
 from rest_framework.generics import RetrieveAPIView, CreateAPIView, ListAPIView
-from .models import SupportContent, SiteSetting, Ticket, FAQCategory
+from .models import SupportContent, SiteSetting, Ticket, FAQCategory, AppDownloadLink
 from .serializers import SupportContentSerializer, SiteSettingSerializer, TicketListSerializer, TicketCreateSerializer,\
-    FAQCategorySerializer
+    FAQCategorySerializer, AppDownloadLinkSerializer
 
 class SupportContentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SupportContentSerializer
@@ -14,7 +14,6 @@ class SupportContentViewSet(viewsets.ReadOnlyModelViewSet):
         if content_type:
             queryset = queryset.filter(type=content_type.upper())
         return queryset
-
 
 class SiteSettingView(RetrieveAPIView):
     permission_classes = [permissions.AllowAny]  # صفحه عمومی
@@ -41,8 +40,12 @@ class TicketListView(ListAPIView):
     def get_queryset(self):
         return Ticket.objects.filter(user=self.request.user)
 
-
 class FAQListView(ListAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = FAQCategorySerializer
     queryset = FAQCategory.objects.filter(is_active=True).prefetch_related('faqs')
+
+class AppDownloadListView(ListAPIView):
+    serializer_class = AppDownloadLinkSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = AppDownloadLink.objects.filter(is_active=True)

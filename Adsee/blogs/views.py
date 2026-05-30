@@ -1,5 +1,6 @@
 from rest_framework import viewsets, permissions
 from .models import Post
+from permissions import IsAdminUser
 from .serializers import PostListSerializer, PostDetailSerializer
 
 class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
@@ -10,3 +11,8 @@ class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'list':
             return PostListSerializer
         return PostDetailSerializer
+
+class AdminPostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostDetailSerializer
+    permission_classes = [IsAdminUser]

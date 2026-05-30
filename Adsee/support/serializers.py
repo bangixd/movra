@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SupportContent, SiteSetting, Ticket, FAQCategory, FAQItem
+from .models import SupportContent, SiteSetting, Ticket, FAQCategory, FAQItem, AppDownloadLink
 
 
 class SupportContentSerializer(serializers.ModelSerializer):
@@ -74,3 +74,11 @@ class TicketAdminSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = ['id', 'user', 'subject', 'name', 'phone', 'message', 'status', 'created_at']
         read_only_fields = ['user', 'subject', 'name', 'phone', 'message', 'created_at']
+
+#----------- DOWNLOAD LINK -----------#
+class AppDownloadLinkSerializer(serializers.ModelSerializer):
+    platform_label = serializers.CharField(source='get_platform_display', read_only=True)
+
+    class Meta:
+        model = AppDownloadLink
+        fields = ['id', 'platform', 'platform_label', 'version', 'url', 'description', 'is_active']

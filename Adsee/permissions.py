@@ -12,7 +12,6 @@ class IsClientUser(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user.is_authenticated and hasattr(request.user, 'client_profile')
 
-
 class IsDriverUser(permissions.BasePermission):
     """
     کاربری که پروفایل Driver دارد.
@@ -22,7 +21,6 @@ class IsDriverUser(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return request.user.is_authenticated and hasattr(request.user, 'driver_profile')
-
 
 class IsPrintShopUser(permissions.BasePermission):
     """اجازه فقط به کاربران دارای نقش PRINT_SHOP یا ادمین"""
@@ -37,7 +35,6 @@ class IsPrintShopUser(permissions.BasePermission):
                 getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
         )
 
-
 class IsClientOrAdmin(permissions.BasePermission):
     """
     دسترسی برای کاربران ادمین یا کاربرانی که نقش CLIENT دارند.
@@ -48,13 +45,11 @@ class IsClientOrAdmin(permissions.BasePermission):
         # ادمین باشد یا نقش CLIENT داشته باشد
         return request.user.is_staff or request.user.role == 'CLIENT'
 
-
 class IsDriverOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
         return request.user.is_staff or getattr(request.user, 'role', None) == 'DRIVER'
-
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
@@ -74,7 +69,6 @@ class IsOwnerOrAdmin(permissions.BasePermission):
         if hasattr(obj, 'user') and obj.user == request.user:
             return True
         return False
-
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
