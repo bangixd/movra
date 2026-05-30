@@ -1,8 +1,8 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 from .views import CampaignDesignViewSet, CampaignViewSet, CampaignSettingViewSet,\
-    CampaignAreaViewSet,\
-    CampaignPricingRuleViewSet, CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView, \
+    CampaignAreaViewSet,CampaignPauseView, CampaignBannerImagesView, CampaignExtendView, CampaignAddVehiclesView, \
+    CampaignPricingRuleViewSet, CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView, CampaignChangeDesignView,\
     CampaignAnalysisListView, CampaignAnalysisCSVView, BannerTypeListView, CampaignGoalListView, TemplateListView, \
     campaign_cost, CampaignPackageListView
 from .admin_views import AdminCampaignGoalViewSet, AdminBannerTypeViewSet, AdminTemplateViewSet, \
@@ -30,6 +30,11 @@ urlpatterns = router.urls + [
     path('banner-types/', BannerTypeListView.as_view(), name='banner-type-list'),
     path('templates/', TemplateListView.as_view(), name='template-list'),
     path('packages/', CampaignPackageListView.as_view(), name='package-list'),
+    path('<int:campaign_id>/change-design/', CampaignChangeDesignView.as_view(), name='campaign-change-design'),
+    path('<int:campaign_id>/add-vehicles/', CampaignAddVehiclesView.as_view(), name='campaign-add-vehicles'),
+    path('<int:campaign_id>/extend/', CampaignExtendView.as_view(), name='campaign-extend'),
+    path('<int:campaign_id>/banner-images/', CampaignBannerImagesView.as_view(), name='campaign-banner-images'),
+    path('<int:campaign_id>/pause/', CampaignPauseView.as_view(), name='campaign-pause'),
     path('<int:campaign_id>/cost/', campaign_cost, name='campaign-cost'),
     path('<int:campaign_id>/analysis/', CampaignAnalysisListView.as_view(), name='campaign-analysis'),
     path('<int:campaign_id>/analysis/csv/', CampaignAnalysisCSVView.as_view(), name='campaign-analysis-csv'),

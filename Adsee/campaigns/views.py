@@ -5,6 +5,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.decorators import action
 from django.core.serializers.json import DjangoJSONEncoder
 import json
+from decimal import Decimal
 from django.http import HttpResponse
 import csv
 from rest_framework.decorators import api_view, permission_classes
@@ -215,6 +216,8 @@ def campaign_cost(request, campaign_id):
     cost = calculate_campaign_cost(campaign)
     return Response(cost)
 
+#-------------PAYMENT------------#
+
 class CampaignInvoiceViewSet(ModelViewSet):
     queryset = CampaignInvoice.objects.all()
     permission_classes = [IsOwnerOrAdmin, IsOwnerOrAdmin]
@@ -346,15 +349,12 @@ class PaymentVerifyView(APIView):
                 invoice.paid_at = timezone.now()
                 invoice.save()
 
-                # فعال‌سازی کمپین
-                campaign = invoice.campaign
-                campaign.status = Campaign.Status.ACTIVE
-                campaign.save()
+                # اعمال تغییرات بر اساس نوع modification
+                self._apply_modifications(invoice)
 
                 return Response({
                     'message': 'پرداخت موفق بود',
                     'ref_id': ref_id,
-                    'campaign_id': campaign.id,
                     'status': 'success'
                 }, status=200)
             else:
@@ -367,9 +367,53 @@ class PaymentVerifyView(APIView):
             transaction.save()
             return Response({
                 'error': 'پرداخت توسط کاربر لغو شد',
-                'status': 'cancelled',
-                'campaign_id': invoice.campaign.id
+                'status': 'cancelled'
             }, status=400)
+
+    def _apply_modifications(self, invoice):
+        """اعمال تغییرات پس از پرداخت موفق"""
+        if not invoice.modification_type:
+            return
+
+        campaign = invoice.campaign
+        mod_data = invoice.modification_data
+
+        if invoice.modification_type == 'EXTEND':
+            from datetime import datetime
+            new_end_date = datetime.fromisoformat(mod_data['new_end_date']).date()
+            campaign.end_date = new_end_date
+            campaign.save()
+            campaign.setting.active_days += mod_data['additional_days']
+            campaign.setting.save()
+
+        elif invoice.modification_type == 'ADD_VEHICLES':
+            campaign.setting.max_driver = mod_data['new_max_driver']
+            campaign.setting.save()
+
+        elif invoice.modification_type == 'CHANGE_DESIGN':
+            # اعمال تغییرات طراحی
+            new_design_data = mod_data['new_design']
+
+            # تبدیل شناسه‌های foreign key به اشیاء
+            if 'template' in new_design_data and new_design_data['template']:
+                new_design_data['template'] = Template.objects.get(id=new_design_data['template'])
+            if 'banner_type' in new_design_data and new_design_data['banner_type']:
+                new_design_data['banner_type'] = BannerType.objects.get(id=new_design_data['banner_type'])
+
+            if hasattr(campaign, 'design'):
+                # ویرایش طراحی موجود
+                design = campaign.design
+                for key, value in new_design_data.items():
+                    setattr(design, key, value)
+                design.save()
+            else:
+                # ایجاد طراحی جدید
+                CampaignDesign.objects.create(
+                    campaign=campaign,
+                    **new_design_data
+                )
+
+#------------ANALYSIS-----------#
 
 class CampaignAnalysisListView(generics.ListAPIView):
     """
@@ -447,3 +491,342 @@ class CampaignPackageListView(ListAPIView):
     queryset = CampaignPackage.objects.filter(is_active=True)
     serializer_class = CampaignPackageSerializer
     permission_classes = [IsAuthenticated, IsClientUser]
+
+#---------------CAMPAIGN SETTING---------------#
+
+class CampaignPauseView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def post(self, request, campaign_id):
+        campaign = get_object_or_404(Campaign, id=campaign_id, brand_name__client__user=request.user)
+        if campaign.status not in [Campaign.Status.ACTIVE, Campaign.Status.PAUSED]:
+            return Response({"error": "وضعیت کمپین اجازهٔ توقف نمی‌دهد"}, status=400)
+        if campaign.status == Campaign.Status.ACTIVE:
+            campaign.status = Campaign.Status.PAUSED
+        else:
+            campaign.status = Campaign.Status.ACTIVE
+        campaign.save()
+        return Response({"status": campaign.status})
+
+class CampaignBannerImagesView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def get(self, request, campaign_id):
+        campaign = get_object_or_404(Campaign, id=campaign_id, brand_name__client__user=request.user)
+        trips = Trip.objects.filter(campaign=campaign, sticker_image__isnull=False)
+        data = []
+        for trip in trips:
+            data.append({
+                'driver_name': trip.driver.full_name,
+                'sticker_image': request.build_absolute_uri(trip.sticker_image.url) if trip.sticker_image else None,
+                'driver_car_image': request.build_absolute_uri(trip.driver_car_image.url) if trip.driver_car_image else None,
+            })
+        return Response(data)
+
+class CampaignExtendView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def post(self, request, campaign_id):
+        campaign = get_object_or_404(
+            Campaign,
+            id=campaign_id,
+            brand_name__client__user=request.user
+        )
+
+        # فقط کمپین‌های فعال، متوقف‌شده یا پیش‌نویس قابل تمدید هستند
+        if campaign.status not in [Campaign.Status.ACTIVE, Campaign.Status.PAUSED, Campaign.Status.DRAFT]:
+            return Response(
+                {"error": "در وضعیت فعلی امکان تمدید کمپین وجود ندارد"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        additional_days = request.data.get('days')
+        if not additional_days:
+            return Response({"error": "تعداد روز تمدید الزامی است"}, status=400)
+        try:
+            additional_days = int(additional_days)
+            if additional_days <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return Response({"error": "تعداد روز باید یک عدد صحیح مثبت باشد"}, status=400)
+
+        # محاسبهٔ هزینهٔ تمدید (فقط هزینهٔ خودرو و راننده برای روزهای اضافه)
+        # فرض می‌کنیم هزینهٔ پایه از روی تنظیمات کمپین محاسبه می‌شود
+        base_cost = calculate_campaign_cost(campaign)
+        # هزینهٔ یک روز = (هزینهٔ خودرو + هزینهٔ راننده) / تعداد روزهای فعلی
+        daily_vehicle_driver_cost = (
+            base_cost['vehicle'] + base_cost['driver']
+        ) / campaign.setting.active_days
+        extra_amount = daily_vehicle_driver_cost * additional_days
+
+        # ایجاد فاکتور با نوع EXTEND
+        invoice = CampaignInvoice.objects.create(
+            campaign=campaign,
+            invoice_number=generate_invoice_number(),
+            subtotal_price=extra_amount,
+            discount_amount=Decimal('0'),
+            tax_amount=extra_amount * Decimal('0.09'),
+            total_price=extra_amount * Decimal('1.09'),
+            expires_at=timezone.now() + timedelta(minutes=15),
+            status=CampaignInvoice.Status.ISSUED,
+            modification_type='EXTEND',
+            modification_data={
+                'additional_days': additional_days,
+                'new_end_date': (
+                    campaign.end_date + timedelta(days=additional_days)
+                ).isoformat() if campaign.end_date else None,
+                'extra_amount': float(extra_amount),
+            },
+            snapshot={
+                'extra_cost': float(extra_amount),
+                'total': float(extra_amount * Decimal('1.09')),
+            }
+        )
+
+        # اتصال به زرین‌پال
+        gateway = ZarinpalGateway()
+        success, payment_url_or_error, error = gateway.send_request(
+            amount=invoice.total_price,
+            description=f'تمدید کمپین {campaign.slogan}',
+            mobile=request.user.phone
+        )
+
+        if success:
+            PaymentTransaction.objects.create(
+                invoice=invoice,
+                authority=payment_url_or_error.split('/')[-1],
+                amount=invoice.total_price,
+                status=PaymentTransaction.Status.INITIATED
+            )
+            return Response({
+                'payment_url': payment_url_or_error,
+                'invoice_id': invoice.id,
+                'extra_amount': float(extra_amount),
+                'total': float(invoice.total_price),
+            }, status=status.HTTP_200_OK)
+        else:
+            invoice.status = CampaignInvoice.Status.VOID
+            invoice.save()
+            return Response(
+                {"error": error or "خطا در اتصال به درگاه پرداخت"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class CampaignAddVehiclesView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def post(self, request, campaign_id):
+        campaign = get_object_or_404(
+            Campaign,
+            id=campaign_id,
+            brand_name__client__user=request.user
+        )
+
+        # فقط کمپین‌های فعال، متوقف‌شده یا پیش‌نویس
+        if campaign.status not in [Campaign.Status.ACTIVE, Campaign.Status.PAUSED, Campaign.Status.DRAFT]:
+            return Response(
+                {"error": "در وضعیت فعلی امکان افزایش خودرو وجود ندارد"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        additional_vehicles = request.data.get('count')
+        if not additional_vehicles:
+            return Response({"error": "تعداد خودروی اضافی الزامی است"}, status=400)
+        try:
+            additional_vehicles = int(additional_vehicles)
+            if additional_vehicles <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return Response({"error": "تعداد باید یک عدد صحیح مثبت باشد"}, status=400)
+
+        # محاسبهٔ هزینهٔ افزایش خودرو (فقط هزینهٔ راننده برای خودروهای جدید)
+        base_cost = calculate_campaign_cost(campaign)
+        # هزینهٔ یک خودرو = هزینهٔ راننده / تعداد خودروهای فعلی
+        if campaign.setting.max_driver > 0:
+            per_vehicle_cost = base_cost['driver'] / campaign.setting.max_driver
+        else:
+            # اگر قبلاً صفر بود، یک مقدار پیش‌فرض (مثلاً از قوانین)
+            from .pricing import get_rule_value
+            per_vehicle_cost = get_rule_value('DRIVER_COST_PER_DAY', Decimal('200000')) * campaign.setting.active_days
+        extra_amount = per_vehicle_cost * additional_vehicles
+
+        invoice = CampaignInvoice.objects.create(
+            campaign=campaign,
+            invoice_number=generate_invoice_number(),
+            subtotal_price=extra_amount,
+            discount_amount=Decimal('0'),
+            tax_amount=extra_amount * Decimal('0.09'),
+            total_price=extra_amount * Decimal('1.09'),
+            expires_at=timezone.now() + timedelta(minutes=15),
+            status=CampaignInvoice.Status.ISSUED,
+            modification_type='ADD_VEHICLES',
+            modification_data={
+                'additional_vehicles': additional_vehicles,
+                'new_max_driver': campaign.setting.max_driver + additional_vehicles,
+                'extra_amount': float(extra_amount),
+            },
+            snapshot={
+                'extra_cost': float(extra_amount),
+                'total': float(extra_amount * Decimal('1.09')),
+            }
+        )
+
+        gateway = ZarinpalGateway()
+        success, payment_url_or_error, error = gateway.send_request(
+            amount=invoice.total_price,
+            description=f'افزایش خودرو کمپین {campaign.slogan}',
+            mobile=request.user.phone
+        )
+
+        if success:
+            PaymentTransaction.objects.create(
+                invoice=invoice,
+                authority=payment_url_or_error.split('/')[-1],
+                amount=invoice.total_price,
+                status=PaymentTransaction.Status.INITIATED
+            )
+            return Response({
+                'payment_url': payment_url_or_error,
+                'invoice_id': invoice.id,
+                'extra_amount': float(extra_amount),
+                'total': float(invoice.total_price),
+            }, status=status.HTTP_200_OK)
+        else:
+            invoice.status = CampaignInvoice.Status.VOID
+            invoice.save()
+            return Response(
+                {"error": error or "خطا در اتصال به درگاه پرداخت"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class CampaignChangeDesignView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def post(self, request, campaign_id):
+        campaign = get_object_or_404(
+            Campaign,
+            id=campaign_id,
+            brand_name__client__user=request.user
+        )
+
+        # کمپین باید در وضعیتی باشد که امکان تغییر طراحی وجود داشته باشد
+        if campaign.status not in [Campaign.Status.DRAFT, Campaign.Status.ACTIVE, Campaign.Status.PAUSED]:
+            return Response(
+                {"error": "در وضعیت فعلی امکان تغییر بنر وجود ندارد"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # اعتبارسنجی داده‌های طراحی جدید
+        design_serializer = CampaignDesignSerializer(data=request.data)
+        if not design_serializer.is_valid():
+            return Response(design_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        new_design_data = design_serializer.validated_data
+
+        # محاسبهٔ هزینهٔ طراحی جدید
+        new_design_cost = self._calculate_design_cost(new_design_data)
+
+        # محاسبهٔ هزینهٔ طراحی قدیم (اگر طراحی قبلی وجود داشته باشد)
+        old_design_cost = Decimal('0')
+        if hasattr(campaign, 'design'):
+            old_design = campaign.design
+            old_design_data = {
+                'design_type': old_design.design_type,
+                'template': old_design.template_id,
+                'banner_type': old_design.banner_type_id,
+            }
+            old_design_cost = self._calculate_design_cost(old_design_data)
+
+        # مابه‌التفاوت
+        extra_amount = new_design_cost - old_design_cost
+
+        if extra_amount <= 0:
+            # بدون نیاز به پرداخت اضافی، مستقیماً تغییرات را اعمال کن
+            self._apply_design_changes(campaign, new_design_data)
+            return Response(
+                {"message": "تغییرات طراحی با موفقیت اعمال شد", "paid": False},
+                status=status.HTTP_200_OK
+            )
+
+        # ایجاد فاکتور برای مابه‌التفاوت
+        invoice = CampaignInvoice.objects.create(
+            campaign=campaign,
+            invoice_number=generate_invoice_number(),
+            subtotal_price=extra_amount,
+            discount_amount=Decimal('0'),
+            tax_amount=extra_amount * Decimal('0.09'),
+            total_price=extra_amount * Decimal('1.09'),
+            expires_at=timezone.now() + timedelta(minutes=15),
+            status=CampaignInvoice.Status.ISSUED,
+            modification_type='CHANGE_DESIGN',
+            modification_data={
+                'new_design': new_design_data,
+                'new_design_cost': float(new_design_cost),
+                'old_design_cost': float(old_design_cost),
+                'extra_amount': float(extra_amount),
+            },
+            snapshot={
+                'extra_cost': float(extra_amount),
+                'total': float(extra_amount * Decimal('1.09')),
+            }
+        )
+
+        # اتصال به زرین‌پال
+        gateway = ZarinpalGateway()
+        success, payment_url_or_error, error = gateway.send_request(
+            amount=invoice.total_price,
+            description=f'تغییر بنر کمپین {campaign.slogan}',
+            mobile=request.user.phone
+        )
+
+        if success:
+            PaymentTransaction.objects.create(
+                invoice=invoice,
+                authority=payment_url_or_error.split('/')[-1],
+                amount=invoice.total_price,
+                status=PaymentTransaction.Status.INITIATED
+            )
+            return Response({
+                'payment_url': payment_url_or_error,
+                'invoice_id': invoice.id,
+                'extra_amount': float(extra_amount),
+                'total': float(invoice.total_price),
+            }, status=status.HTTP_200_OK)
+        else:
+            # اگر اتصال به زرین‌پال ناموفق بود، فاکتور را حذف یا void کن
+            invoice.status = CampaignInvoice.Status.VOID
+            invoice.save()
+            return Response(
+                {"error": error or "خطا در اتصال به درگاه پرداخت"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def _calculate_design_cost(self, design_data):
+        """محاسبهٔ هزینهٔ طراحی بر اساس نوع طراحی"""
+        from .pricing import get_rule_value
+
+        design_type = design_data.get('design_type')
+
+        if design_type == 'DEFAULT_TEMPLATE':
+            return get_rule_value('DESIGN_BASE_COST', Decimal('50000'))
+        elif design_type == 'CUSTOM_DESIGN':
+            return get_rule_value('DESIGN_CUSTOM_COST', Decimal('200000'))
+        elif design_type == 'USER_UPLOAD':
+            return get_rule_value('DESIGN_UPLOAD_COST', Decimal('0'))
+
+        return Decimal('0')
+
+    def _apply_design_changes(self, campaign, new_design_data):
+        """اعمال تغییرات طراحی روی کمپین"""
+        if hasattr(campaign, 'design'):
+            # ویرایش طراحی موجود
+            design = campaign.design
+            for key, value in new_design_data.items():
+                setattr(design, key, value)
+            design.save()
+        else:
+            # ایجاد طراحی جدید
+            CampaignDesign.objects.create(
+                campaign=campaign,
+                **new_design_data
+            )

@@ -414,6 +414,14 @@ class CampaignInvoice(models.Model):
 
     snapshot = models.JSONField(default=dict)
 
+    MODIFICATION_TYPES = [
+        ('EXTEND', 'تمدید کمپین'),
+        ('ADD_VEHICLES', 'افزایش خودرو'),
+        ('CHANGE_DESIGN', 'تغییر بنر'),
+    ]
+    modification_type = models.CharField(max_length=20, choices=MODIFICATION_TYPES, null=True, blank=True)
+    modification_data = models.JSONField(default=dict, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
