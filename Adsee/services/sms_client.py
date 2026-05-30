@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 class MeliPayamakClient:
     def __init__(self):
         self.base_url = 'https://console.melipayamak.com/api/send'
+        self.key_url = settings.MELIPAYAMAK_KEY
         self.from_number = settings.MELIPAYAMAK_FROM
 
     def send_sms(self, to: str, message: str):
@@ -22,7 +23,7 @@ class MeliPayamakClient:
         }
         try:
             response = requests.post(
-                f'{self.base_url}/simple/8beb8f6593f140b7baaf9d581c5992d9',
+                f'{self.base_url}/simple/{self.key_url}',
                 json=payload,
                 timeout=10
             )

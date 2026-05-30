@@ -1,15 +1,24 @@
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-# from django.core import cache
 from rest_framework.throttling import UserRateThrottle
 from rest_framework import viewsets, serializers, status
 from rest_framework.permissions import IsAuthenticated
-from .serializers import ClientProfileSerializer, ClientDocumentSerializer
-from .models import ClientProfile, ClientDocument
+from .serializers import ClientProfileSerializer, ClientDocumentSerializer, ClientLocationSerializer
+from .models import ClientProfile, ClientDocument, CampaignPricingRule
+from campaigns.models import CampaignPackage, Campaign, CampaignInvoice
+from campaigns.serializers import CampaignPackageSerializer
+from notifications.models import Notification
 from permissions import IsClientUser, IsClientOrAdmin, IsOwnerOrAdmin
+from rest_framework.decorators import action, api_view, permission_classes
+from django.contrib.gis.geos import Point
+from services.neshan_client import NeshanClient
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from django.db.models import Sum
+from trips.models import TripAnalysis
+from django.utils import timezone
+
+
 
 
 class ClientProfileViewSet(viewsets.ModelViewSet):
@@ -32,6 +41,30 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         kwargs.setdefault('context', self.get_serializer_context())
         return serializer_class(*args, **kwargs)
 
+    @action(detail=False, methods=['post'], url_path='set-location')
+    def set_location(self, request):
+        serializer = ClientLocationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        lat = serializer.validated_data['lat']
+        lng = serializer.validated_data['lng']
+        point = Point(lng, lat, srid=4326)
+
+        profile = self.get_queryset().first()
+        if not profile:
+            return Response({"error": "پروفایلی یافت نشد"}, status=404)
+
+        profile.location = point
+        profile.save(update_fields=['location'])
+
+        return Response({
+            "message": "موقعیت مکانی با موفقیت ذخیره شد",
+            "location": {
+                "lat": lat,
+                "lng": lng
+            }
+        })
+
     def perform_create(self, serializer):
         instance = serializer.save()
         # self.process_kyc(instance)
@@ -53,6 +86,68 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
             # اگر user مشخص نشده باشد، باید خطا بدهد (چون برای ادمین هم الزامی است)
             raise serializers.ValidationError({"user": "شناسه کاربر الزامی است."})
 
+class ClientHomeView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def get(self, request):
+        user = request.user
+        client = user.client_profile
+
+        # ۱. اطلاعات بالای صفحه
+        profile = {
+            'name': client.full_name,
+            'city': client.city.name if client.city else None,
+            'location': {
+                'lat': client.location.y if client.location else None,
+                'lng': client.location.x if client.location else None,
+            } if client.location else None,
+        }
+
+        # ۲. پکیج‌های پیشنهادی
+        packages = CampaignPackage.objects.filter(is_active=True)
+        package_data = CampaignPackageSerializer(packages, many=True).data
+
+        # ۳. کمپین‌های من (آخرین هر وضعیت)
+        statuses = [Campaign.Status.ACTIVE, Campaign.Status.COMPLETED, Campaign.Status.CANCELLED]
+        my_campaigns = {}
+        for status in statuses:
+            campaign = Campaign.objects.filter(
+                brand_name__client=client,
+                status=status
+            ).order_by('-created_at').first()
+            if campaign:
+                # اطلاعات تکمیلی
+                total_distance = TripAnalysis.objects.filter(
+                    trip__campaign=campaign
+                ).aggregate(d=Sum('distance_km'))['d'] or 0
+
+                # مبلغ (از فاکتور پرداخت‌شده یا هزینهٔ فعلی)
+                invoice = CampaignInvoice.objects.filter(
+                    campaign=campaign,
+                    status=CampaignInvoice.Status.PAID
+                ).first()
+                amount = float(invoice.total_price) if invoice else 0
+
+                my_campaigns[status] = {
+                    'id': campaign.id,
+                    'slogan': campaign.slogan,
+                    'start_date': campaign.start_date,
+                    'end_date': campaign.end_date,
+                    'total_distance_km': total_distance,
+                    'amount': amount,
+                }
+            else:
+                my_campaigns[status] = None
+
+        # ۴. اعلان‌ها
+        unread_notifications = Notification.objects.filter(recipient=user, is_read=False).count()
+
+        return Response({
+            'profile': profile,
+            'packages': package_data,
+            'my_campaigns': my_campaigns,
+            'unread_notifications': unread_notifications,
+        })
 
 class ClientDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = ClientDocumentSerializer
@@ -82,3 +177,121 @@ class ClientDocumentViewSet(viewsets.ModelViewSet):
             doc.reject_reason = request.data.get('reject_reason', '')
         doc.save()
         return Response(ClientDocumentSerializer(doc).data)
+
+class ClientReportSummaryView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def get(self, request):
+        user = request.user
+        client = user.client_profile
+
+        # کمپین‌های این کلاینت
+        campaigns = Campaign.objects.filter(brand_name__client=client)
+
+        total_campaigns = campaigns.count()
+
+        # مجموع ساعات فعال (از تحلیل سفرها)
+        total_active_seconds = TripAnalysis.objects.filter(
+            trip__campaign__in=campaigns,
+            trip__status='COMPLETED'
+        ).aggregate(total=Sum('active_seconds'))['total'] or 0
+        total_hours = round(total_active_seconds / 3600, 1)
+
+        # مجموع هزینه‌های پرداخت‌شده
+        total_cost = CampaignInvoice.objects.filter(
+            campaign__in=campaigns,
+            status=CampaignInvoice.Status.PAID
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+
+        # مجموع روزهای فعال (از تنظیمات کمپین‌ها)
+        total_days = campaigns.aggregate(total=Sum('setting__active_days'))['total'] or 0
+
+        return Response({
+            'total_campaigns': total_campaigns,
+            'total_hours_seen': total_hours,
+            'total_cost': float(total_cost),
+            'total_days': total_days,
+        })
+
+class ClientPeakHoursView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def get(self, request):
+        user = request.user
+        client = user.client_profile
+
+        # تحلیل‌های سفرهای تکمیل‌شدهٔ کلاینت
+        analyses = TripAnalysis.objects.filter(
+            trip__campaign__brand_name__client=client,
+            trip__status='COMPLETED'
+        ).select_related('trip')
+
+        # آرایه‌ای ۲۴ تایی برای هر ساعت (صفر اولیه)
+        hourly_activity = [0] * 24
+
+        for analysis in analyses:
+            if analysis.active_seconds > 0:
+                # میانگین توزیع بر روی ۲۴ ساعت (تقریبی)
+                per_hour = analysis.active_seconds / 24.0
+                for i in range(24):
+                    hourly_activity[i] += per_hour
+
+        # تبدیل به لیست دیکشنری برای نمودار
+        chart_data = [
+            {'hour': h, 'seconds': round(hourly_activity[h], 1)}
+            for h in range(24)
+        ]
+
+        return Response({
+            'chart_data': chart_data
+        })
+
+class BillboardComparisonView(APIView):
+    permission_classes = [IsAuthenticated, IsClientUser]
+
+    def get(self, request):
+        user = request.user
+        client = user.client_profile
+
+        # مجموع تخمین نمایش‌ها
+        total_impressions = TripAnalysis.objects.filter(
+            trip__campaign__brand_name__client=client,
+            trip__status='COMPLETED'
+        ).aggregate(total=Sum('estimated_impressions'))['total'] or 0
+
+        # خواندن عدد مبنا از قوانین (مثلاً کلید BILLBOARD_DAILY_IMPRESSIONS)
+        rule = CampaignPricingRule.objects.filter(key='BILLBOARD_DAILY_IMPRESSIONS', is_active=True).first()
+        billboard_impressions = rule.value if rule else 50000  # پیش‌فرض ۵۰ هزار
+
+        # مقایسه
+        ratio = round(total_impressions / billboard_impressions, 2) if billboard_impressions > 0 else 0
+
+        return Response({
+            'our_total_impressions': total_impressions,
+            'billboard_daily_impressions': billboard_impressions,
+            'ratio': ratio,
+            'message': f'تأثیر تبلیغات شما معادل {ratio} روز نمایش بیلبورد است.'
+        })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsClientUser])
+def reverse_geocode(request):
+    lat = request.data.get('lat')
+    lng = request.data.get('lng')
+
+    if not lat or not lng:
+        return Response(
+            {'error': 'عرض و طول جغرافیایی الزامی است'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    client = NeshanClient()
+    result = client.reverse_geocode(lat, lng)
+
+    if result:
+        return Response(result, status=status.HTTP_200_OK)
+    else:
+        return Response(
+            {'error': 'دریافت آدرس با خطا مواجه شد'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

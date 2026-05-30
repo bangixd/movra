@@ -19,14 +19,14 @@ from rest_framework import status, filters, permissions
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from .models import CampaignDesign, Campaign, CampaignSetting, Template, CampaignArea, CampaignPricingRule,\
-    CampaignInvoice, PaymentTransaction, BannerType, CampaignGoal
+    CampaignInvoice, PaymentTransaction, BannerType, CampaignGoal, CampaignPackage
 from services.payment_gateway import ZarinpalGateway
 from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignSettingSerializer, TemplateSerializer,\
     CampaignDesignCreateSerializer, CampaignDesignUpdateSerializer,\
     CampaignAreaDetailSerializer, CampaignAreaCreateSerializer, CampaignPricingRuleSerializer,\
     CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer,\
     PaymentRequestSerializer, PaymentVerifySerializer, PaymentTransactionSerializer, BannerTypeSerializer,\
-    CampaignGoalSerializer
+    CampaignGoalSerializer, CampaignPackageSerializer
 from permissions import IsClientUser, IsOwnerOrAdmin
 from vehicles.models import VehicleType
 from mixins import SafeGetQuerysetMixin
@@ -443,3 +443,8 @@ class CampaignAnalysisCSVView(APIView):
             ])
 
         return response
+
+class CampaignPackageListView(ListAPIView):
+    queryset = CampaignPackage.objects.filter(is_active=True)
+    serializer_class = CampaignPackageSerializer
+    permission_classes = [IsAuthenticated, IsClientUser]

@@ -3,6 +3,8 @@ from accounts.models import User
 from django.utils import timezone
 from django.core.validators import RegexValidator
 from django.conf import settings
+from django.contrib.gis.db import models as geomodels
+
 
 
 class ClientProfile(models.Model):
@@ -25,7 +27,7 @@ class ClientProfile(models.Model):
     advertiser_type = models.CharField(
         max_length=10, choices=AdvertiserType.choices, default=AdvertiserType.REAL
     )
-
+    location = geomodels.PointField(srid=4326, null=True, blank=True, verbose_name="موقعیت مکانی")
     # اطلاعات هویتی - حقیقی
     full_name = models.CharField(max_length=120, blank=True, null=True)
     national_id = models.CharField(

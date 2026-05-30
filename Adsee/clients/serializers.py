@@ -1,7 +1,12 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from .models import ClientProfile, ClientDocument
+from rest_framework import serializers
+from rest_framework_gis import serializers as gis_serializers
 
+class ClientLocationSerializer(serializers.Serializer):
+    lat = serializers.FloatField(required=True)
+    lng = serializers.FloatField(required=True)
 
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:

@@ -132,8 +132,6 @@ class Trip(models.Model):
     def __str__(self):
         return f"Trip {self.id} - {self.driver} ({self.status})"
 
-
-
 class TripAnalysis(models.Model):
     trip = models.OneToOneField(
         Trip,

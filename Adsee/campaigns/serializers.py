@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from datetime import timedelta
 from .models import CampaignDesign, ProductImage, Template, Campaign, CampaignSetting, CampaignArea,\
-    CampaignPricingRule, CampaignInvoice, PaymentTransaction, CampaignGoal, BannerType
+    CampaignPricingRule, CampaignInvoice, PaymentTransaction, CampaignGoal, BannerType, CampaignPackage
 from clients.models import ClientProfile
 from brands.models import Brand
 from geo.models import City, Neighborhood, SuggestedRoute
@@ -765,3 +765,8 @@ class AvailableCampaignSerializer(serializers.ModelSerializer):
         if design and design.print_shop:
             return design.print_shop.address
         return None
+
+class CampaignPackageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignPackage
+        fields = '__all__'

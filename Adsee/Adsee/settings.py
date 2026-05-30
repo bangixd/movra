@@ -261,4 +261,9 @@ ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL")   # آدرس بازگ
 
 # MeliPayamak
 MELIPAYAMAK_URL = os.environ.get('MELIPAYAMAK_URL', 'url')
+MELIPAYAMAK_KEY = os.environ.get('MELIPAYAMAK_KEY', 'url')
 MELIPAYAMAK_FROM = os.environ.get('MELIPAYAMAK_FROM', '5000xxx')
+
+# Neshan API
+NESHAN_API_KEY = os.environ.get('NESHAN_API_KEY', 'neshan-api-key')
+NESHAN_REVERSE_URL = 'https://api.neshan.org/v5/reverse'
