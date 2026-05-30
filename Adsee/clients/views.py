@@ -24,11 +24,15 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
-    queryset = ClientProfile.objects.all()
     serializer_class = ClientProfileSerializer
     permission_classes = [IsAuthenticated, IsClientOrAdmin, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return ClientProfile.objects.all()
+        return ClientProfile.objects.filter(user=self.request.user)
 
     def get_serializer(self, *args, **kwargs):
         if self.request.method == 'POST':
@@ -39,6 +43,21 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         serializer_class = self.get_serializer_class()
         kwargs.setdefault('context', self.get_serializer_context())
         return serializer_class(*args, **kwargs)
+
+
+    def perform_create(self, serializer):
+        # اگر در درخواست، user مشخص شده باشد، از آن استفاده کن
+        user_id = self.request.data.get('user')
+        if user_id:
+            try:
+                user = get_object_or_404(get_user_model(), pk=user_id)
+                serializer.save(user=user)
+            except ValueError:  # اگر user_id عدد نباشد
+                raise serializers.ValidationError({"user": "شناسه کاربر نامعتبر است."})
+        else:
+            # اگر user مشخص نشده باشد، باید خطا بدهد (چون برای ادمین هم الزامی است)
+            raise serializers.ValidationError({"user": "شناسه کاربر الزامی است."})
+
 
     @action(detail=False, methods=['post'], url_path='set-location')
     def set_location(self, request):
@@ -64,18 +83,20 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
             }
         })
 
-    def perform_create(self, serializer):
-        # اگر در درخواست، user مشخص شده باشد، از آن استفاده کن
-        user_id = self.request.data.get('user')
-        if user_id:
-            try:
-                user = get_object_or_404(get_user_model(), pk=user_id)
-                serializer.save(user=user)
-            except ValueError:  # اگر user_id عدد نباشد
-                raise serializers.ValidationError({"user": "شناسه کاربر نامعتبر است."})
-        else:
-            # اگر user مشخص نشده باشد، باید خطا بدهد (چون برای ادمین هم الزامی است)
-            raise serializers.ValidationError({"user": "شناسه کاربر الزامی است."})
+    @action(detail=False, methods=['get', 'patch'], url_path='me')
+    def my_profile(self, request):
+        profile = self.get_queryset().first()
+        if not profile:
+            return Response({"error": "پروفایلی یافت نشد"}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            serializer = self.get_serializer(profile, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
 
 class ClientHomeView(APIView):
     permission_classes = [IsAuthenticated, IsClientUser]

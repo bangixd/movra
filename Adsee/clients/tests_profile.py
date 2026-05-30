@@ -26,3 +26,14 @@ class ClientProfileTest(TestCase):
         data = response.data
         self.assertEqual(data['wallet_balance'], '50000.00')
         self.assertEqual(data['active_campaigns_count'], 2)  # ACTIVE و PAUSED
+
+    def test_my_profile_me_endpoint(self):
+        response = self.api.get('/api/clients/profile/me/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['full_name'], 'Sara')
+
+    def test_update_my_profile(self):
+        response = self.api.patch('/api/clients/profile/me/', {'full_name': 'سارا جدید'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.full_name, 'سارا جدید')
