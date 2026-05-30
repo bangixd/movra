@@ -1,23 +1,42 @@
-from rest_framework import viewsets, permissions
-from .models import Brand
-from .serializers import BrandListSerializer, BrandDetailSerializer
-from permissions import IsClientUser, IsOwnerOrAdmin
+from rest_framework.response import Response
+from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated
+from .models import Brand, BrandCategory
+from rest_framework.decorators import action
+from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer
+from permissions import IsClientUser
 
 
 class BrandViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated, IsClientUser, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsClientUser]
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action == 'list' or self.action == 'retrieve':
             return BrandListSerializer
-        return BrandDetailSerializer
+        return BrandCreateUpdateSerializer
 
     def get_queryset(self):
-        # هر کلاینت فقط برندهای خودش رو می‌بینه
         user = self.request.user
-        if not user.is_authenticated:
-            return Brand.objects.none()
-        return Brand.objects.filter(client=self.request.user.client_profile)
+        if user.is_staff:
+            return Brand.objects.all()
+        return Brand.objects.filter(client__user=user)
 
     def perform_create(self, serializer):
-        serializer.save(client=self.request.user.client_profile)
+        serializer.save(client=self.request.user.client_profile, status='PENDING')
+
+    @action(detail=True, methods=['patch'])
+    def review(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        brand = self.get_object()
+        new_status = request.data.get('status')
+        if new_status not in ['APPROVED', 'REJECTED']:
+            return Response({"error": "وضعیت نامعتبر"}, status=400)
+        brand.status = new_status
+        brand.save()
+        return Response(BrandListSerializer(brand).data)
+
+class BrandCategoryListView(viewsets.ReadOnlyModelViewSet):
+    queryset = BrandCategory.objects.filter(is_active=True)
+    serializer_class = BrandCategorySerializer
+    permission_classes = [IsAuthenticated]

@@ -1,6 +1,13 @@
 from django.db import models
 
 
+class BrandCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
 class Brand(models.Model):
     client = models.ForeignKey(
         'clients.ClientProfile',
@@ -16,6 +23,15 @@ class Brand(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    city = models.ForeignKey('geo.City', on_delete=models.SET_NULL, null=True, blank=True)
+    category = models.ForeignKey(BrandCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('PENDING', 'در انتظار تأیید'), ('APPROVED', 'تأیید شده'), ('REJECTED', 'رد شده')],
+        default='PENDING'
+    )
+    whatsapp = models.CharField(max_length=20, blank=True, null=True)
+    telegram = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
         ordering = ['-created_at']
