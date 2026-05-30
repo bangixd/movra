@@ -9,7 +9,8 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryFi
 from .utils import generate_invoice_number
 from django.utils import timezone
 from print_shops.serializers import PrintShopProfileSerializer
-from trips.models import TripAnalysis, DriverLocation, Trip
+from trips.models import TripAnalysis, Trip
+from geo.models import DriverLocation
 from drivers.models import DriverProfile
 
 
@@ -654,7 +655,7 @@ class CampaignInvoiceReadSerializer(serializers.ModelSerializer):
         model = CampaignInvoice
         fields = [
             'id', 'campaign', 'campaign_title', 'client_name',
-            'campaign_cost', 'campaign_cost_summary',
+            'campaign_cost_summary',
             'invoice_number', 'status',
             'subtotal_price', 'discount_amount', 'tax_amount', 'total_price',
             'expires_at', 'paid_at', 'snapshot', 'created_at'

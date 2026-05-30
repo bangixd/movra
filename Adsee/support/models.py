@@ -6,6 +6,7 @@ class SupportContent(models.Model):
     class ContentType(models.TextChoices):
         CONTACT = 'CONTACT', 'تماس با ما'
         FAQ = 'FAQ', 'سوالات متداول'
+        RULES = 'RULES', 'قوانین و مقررات شهری'  # جدید
 
     type = models.CharField(max_length=20, choices=ContentType.choices)
     title = models.CharField(max_length=200)

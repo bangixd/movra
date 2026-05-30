@@ -20,8 +20,6 @@ from django.utils import timezone
 from rest_framework.generics import ListAPIView
 
 
-
-
 class ClientProfileViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.

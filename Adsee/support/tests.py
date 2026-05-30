@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 from accounts.models import User
-from .models import SiteSetting
+from .models import SiteSetting, SupportContent
 
 class SupportAPITest(TestCase):
     def setUp(self):
@@ -13,6 +13,12 @@ class SupportAPITest(TestCase):
 
     def test_list_content(self):
         response = self.client.get('/api/support/content/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+
+    def test_rules_content(self):
+        SupportContent.objects.create(type='RULES', title='قوانین', body='...')
+        response = self.client.get('/api/support/content/?type=RULES')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 

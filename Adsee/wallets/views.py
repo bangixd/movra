@@ -6,7 +6,7 @@ from .serializers import TransactionSerializer, WalletSummarySerializer, BankAcc
 from permissions import IsDriverUser
 
 class WalletViewSet(viewsets.GenericViewSet):
-    permission_classes = [permissions.IsAuthenticated, IsDriverUser]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class= WalletSummarySerializer
 
 
@@ -35,7 +35,7 @@ class WalletViewSet(viewsets.GenericViewSet):
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     serializer_class = BankAccountSerializer
-    permission_classes = [permissions.IsAuthenticated, IsDriverUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return BankAccount.objects.filter(driver__user=self.request.user)
