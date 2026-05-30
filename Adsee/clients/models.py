@@ -6,16 +6,22 @@ from django.conf import settings
 from django.contrib.gis.db import models as geomodels
 
 
-
 class ClientProfile(models.Model):
     class AdvertiserType(models.TextChoices):
-        REAL = "REAL", "Real"
-        LEGAL = "LEGAL", "Legal"
+        REAL = "REAL", "حقیقی"
+        LEGAL = "LEGAL", "حقوقی"
 
     class KYCStatus(models.TextChoices):
         PENDING = "PENDING", "Pending"
         APPROVED = "APPROVED", "Approved"
         REJECTED = "REJECTED", "Rejected"
+
+    class KYCStep(models.IntegerChoices):
+        SELECT_TYPE = 1, "انتخاب نوع فعالیت"
+        UPLOAD_DOCUMENTS = 2, "بارگذاری مدارک"
+        VERIFICATION = 3, "در انتظار تأیید"
+        APPROVED = 4, "تأیید شده"
+        REJECTED = 5, "رد شده"
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -24,9 +30,9 @@ class ClientProfile(models.Model):
     )
 
     # نوع تبلیغ‌دهنده
-    advertiser_type = models.CharField(
-        max_length=10, choices=AdvertiserType.choices, default=AdvertiserType.REAL
-    )
+    advertiser_type = models.CharField(max_length=10, choices=AdvertiserType.choices, default=AdvertiserType.REAL)
+    kyc_step = models.PositiveSmallIntegerField(choices=KYCStep.choices, default=KYCStep.SELECT_TYPE)
+
     location = geomodels.PointField(srid=4326, null=True, blank=True, verbose_name="موقعیت مکانی")
     # اطلاعات هویتی - حقیقی
     full_name = models.CharField(max_length=120, blank=True, null=True)
@@ -66,11 +72,15 @@ class ClientProfile(models.Model):
 
 class ClientDocument(models.Model):
     class DocumentType(models.TextChoices):
-        NATIONAL_ID = 'NATIONAL_ID', 'National ID'
-        COMPANY_REGISTRATION = 'COMPANY_REGISTRATION', 'Company Registration'
-        ADVERTISING_LICENSE = 'ADVERTISING_LICENSE', 'Advertising License'
-        TAX_CERTIFICATE = 'TAX_CERTIFICATE', 'Tax Certificate'
-        OTHER = 'OTHER', 'Other'
+        # مدارک حقیقی
+        NATIONAL_ID_FRONT = 'NATIONAL_ID_FRONT', 'روی کارت ملی'
+        NATIONAL_ID_BACK = 'NATIONAL_ID_BACK', 'پشت کارت ملی'
+        SELFIE = 'SELFIE', 'عکس سلفی'
+        # مدارک حقوقی
+        BUSINESS_LICENSE = 'BUSINESS_LICENSE', 'گواهی کسب'
+        ECONOMIC_CODE = 'ECONOMIC_CODE', 'کد اقتصادی'
+        # سایر
+        OTHER = 'OTHER', 'سایر'
 
     class ApprovalStatus(models.TextChoices):
         PENDING = 'PENDING', 'Pending'

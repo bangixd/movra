@@ -18,6 +18,7 @@ from django.db.models import Sum
 from trips.models import TripAnalysis, HourlyActivity, Trip
 from django.utils import timezone
 from rest_framework.generics import ListAPIView
+from .utils import update_kyc_status
 
 
 class ClientProfileViewSet(viewsets.ModelViewSet):
@@ -44,7 +45,6 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         kwargs.setdefault('context', self.get_serializer_context())
         return serializer_class(*args, **kwargs)
 
-
     def perform_create(self, serializer):
         # اگر در درخواست، user مشخص شده باشد، از آن استفاده کن
         user_id = self.request.data.get('user')
@@ -57,7 +57,6 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         else:
             # اگر user مشخص نشده باشد، باید خطا بدهد (چون برای ادمین هم الزامی است)
             raise serializers.ValidationError({"user": "شناسه کاربر الزامی است."})
-
 
     @action(detail=False, methods=['post'], url_path='set-location')
     def set_location(self, request):
@@ -97,6 +96,21 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='select-advertiser-type')
+    def select_advertiser_type(self, request):
+        profile = self.get_queryset().first()
+        if not profile:
+            return Response({"error": "پروفایلی یافت نشد"}, status=404)
+
+        adv_type = request.data.get('advertiser_type')
+        if adv_type not in [ClientProfile.AdvertiserType.REAL, ClientProfile.AdvertiserType.LEGAL]:
+            return Response({"error": "نوع فعالیت نامعتبر است"}, status=400)
+
+        profile.advertiser_type = adv_type
+        profile.kyc_step = ClientProfile.KYCStep.UPLOAD_DOCUMENTS
+        profile.save(update_fields=['advertiser_type', 'kyc_step'])
+        return Response({"message": "نوع فعالیت با موفقیت ثبت شد", "kyc_step": profile.kyc_step})
 
 class ClientHomeView(APIView):
     permission_classes = [IsAuthenticated, IsClientUser]
@@ -172,6 +186,12 @@ class ClientDocumentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        # به‌روزرسانی مرحلهٔ KYC پروفایل
+        profile = self.request.user.client_profile
+        if profile.kyc_step == ClientProfile.KYCStep.UPLOAD_DOCUMENTS:
+            profile.kyc_step = ClientProfile.KYCStep.VERIFICATION
+            profile.save(update_fields=['kyc_step'])
+        update_kyc_status(self.request.user)
 
     @action(detail=True, methods=['patch'])
     def review(self, request, pk=None):
@@ -188,6 +208,7 @@ class ClientDocumentViewSet(viewsets.ModelViewSet):
         if new_status == ClientDocument.ApprovalStatus.REJECTED:
             doc.reject_reason = request.data.get('reject_reason', '')
         doc.save()
+        update_kyc_status(doc.user)
         return Response(ClientDocumentSerializer(doc).data)
 
 class ClientReportSummaryView(APIView):
