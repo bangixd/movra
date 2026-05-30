@@ -6,7 +6,6 @@ class WalletSerializer(serializers.ModelSerializer):
         model = Wallet
         fields = ['balance']
 
-
 class BankAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankAccount

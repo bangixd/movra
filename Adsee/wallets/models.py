@@ -34,6 +34,7 @@ class Transaction(models.Model):
     class TransactionType(models.TextChoices):
         INCOME = 'INCOME', 'درآمد'
         WITHDRAWAL = 'WITHDRAWAL', 'برداشت'
+        DEPOSIT = 'DEPOSIT', 'شارژ کیف پول'
         BONUS = 'BONUS', 'پاداش'
         REFUND = 'REFUND', 'بازگشت'
 
