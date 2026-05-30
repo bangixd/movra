@@ -36,7 +36,6 @@ class FAQItemSerializer(serializers.ModelSerializer):
         model = FAQItem
         fields = ['id', 'question', 'answer']
 
-
 class FAQCategorySerializer(serializers.ModelSerializer):
     faqs = FAQItemSerializer(many=True, read_only=True)
 

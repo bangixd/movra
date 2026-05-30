@@ -26,7 +26,13 @@ class SiteSettingView(RetrieveAPIView):
 
 class TicketCreateView(CreateAPIView):
     serializer_class = TicketCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save()
 
 class TicketListView(ListAPIView):
     serializer_class = TicketListSerializer

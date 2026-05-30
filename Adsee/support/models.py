@@ -67,7 +67,8 @@ class Ticket(models.Model):
         OPEN = 'OPEN', 'باز'
         CLOSED = 'CLOSED', 'بسته'
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tickets')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tickets',null=True,
+    blank=True)
     subject = models.CharField(max_length=200, verbose_name="موضوع")
     name = models.CharField(max_length=100, verbose_name="نام و نام خانوادگی")
     phone = models.CharField(max_length=15, verbose_name="شماره تماس")
