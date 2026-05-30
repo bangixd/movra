@@ -5,13 +5,10 @@ from campaigns.models import Campaign
 from django.db.models import Sum
 from django.utils import timezone
 
-
-class BrandListSerializer(serializers.ModelSerializer):
-    """برای نمایش لیست برندها (خلاصه)"""
+class AdminBrandCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Brand
-        fields = ['id', 'name', 'slug', 'logo', 'phone', 'is_active']
-
+        model = BrandCategory
+        fields = ['id', 'name', 'is_active']
 
 class BrandDetailSerializer(serializers.ModelSerializer):
     """جزئیات کامل یک برند"""

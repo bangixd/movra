@@ -3,8 +3,8 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from .models import Brand, BrandCategory
 from rest_framework.decorators import action
-from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer
-from permissions import IsClientUser
+from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer, AdminBrandCategorySerializer
+from permissions import IsClientUser, IsAdminUser
 
 
 class BrandViewSet(viewsets.ModelViewSet):
@@ -17,9 +17,12 @@ class BrandViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff:
-            return Brand.objects.all()
-        return Brand.objects.filter(client__user=user)
+        qs = Brand.objects.filter(client__user=user)
+
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param.upper())
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(client=self.request.user.client_profile, status='PENDING')
@@ -40,3 +43,8 @@ class BrandCategoryListView(viewsets.ReadOnlyModelViewSet):
     queryset = BrandCategory.objects.filter(is_active=True)
     serializer_class = BrandCategorySerializer
     permission_classes = [IsAuthenticated]
+
+class AdminBrandCategoryViewSet(viewsets.ModelViewSet):
+    queryset = BrandCategory.objects.all()
+    serializer_class = AdminBrandCategorySerializer
+    permission_classes = [IsAdminUser]
