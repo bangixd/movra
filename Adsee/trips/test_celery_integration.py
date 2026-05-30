@@ -55,7 +55,7 @@ class LongIntegrationTest(TestCase):
         # ---------- Driver & Vehicle ----------
         self.driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
         self.driver_profile = DriverProfile.objects.create(
-            user=self.driver_user, first_name='Driver', last_name='Ali', national_id='0987654321'
+            user=self.driver_user, full_name='Driver Ali', national_id='0987654321'
         )
         self.vehicle = Vehicle.objects.create(
             driver=self.driver_profile,

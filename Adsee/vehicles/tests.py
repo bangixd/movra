@@ -7,7 +7,7 @@ from .models import VehicleType, Vehicle
 class VehicleModelTest(TestCase):
     def setUp(self):
         self.driver_user = User.objects.create_user(phone='09121111111', role=User.Role.DRIVER)
-        self.driver_profile = DriverProfile.objects.create(user=self.driver_user, first_name='Driver1', national_id='1234567890')
+        self.driver_profile = DriverProfile.objects.create(user=self.driver_user, full_name='Driver1', national_id='1234567890')
         self.vehicle_type = VehicleType.objects.create(name='Sedan', base_hourly_rate=50000)
 
     def test_vehicle_hourly_rate_from_type(self):
@@ -27,7 +27,7 @@ class VehicleModelTest(TestCase):
 class VehicleAPITest(TestCase):
     def setUp(self):
         self.driver_user = User.objects.create_user(phone='09120001122', role=User.Role.DRIVER)
-        self.driver_profile = DriverProfile.objects.create(user=self.driver_user, first_name='Ali', national_id='1234567890')
+        self.driver_profile = DriverProfile.objects.create(user=self.driver_user, full_name='Ali', national_id='1234567890')
         self.vehicle_type = VehicleType.objects.create(name='SUV', base_hourly_rate=80000)
         self.api = APIClient()
         self.api.force_authenticate(user=self.driver_user)
@@ -45,7 +45,7 @@ class VehicleAPITest(TestCase):
 
     def test_only_own_vehicles_listed(self):
         other_driver = User.objects.create_user(phone='09120003344', role=User.Role.DRIVER)
-        other_profile = DriverProfile.objects.create(user=other_driver, first_name='Hossein', national_id='9999999999')
+        other_profile = DriverProfile.objects.create(user=other_driver, full_name='Hossein', national_id='9999999999')
         Vehicle.objects.create(driver=self.driver_profile, vehicle_type=self.vehicle_type, plate_number='X', banner_max_width_cm=100, banner_max_height_cm=50)
         Vehicle.objects.create(driver=other_profile, vehicle_type=self.vehicle_type, plate_number='Y', banner_max_width_cm=100, banner_max_height_cm=50)
         response = self.api.get('/api/vehicles/')

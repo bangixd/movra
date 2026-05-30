@@ -43,8 +43,7 @@ class CampaignAnalysisCSVTest(TestCase):
         self.driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
         self.driver_profile = DriverProfile.objects.create(
             user=self.driver_user,
-            first_name='Driver',
-            last_name='Ali',
+            full_name='Driver Ali',
             national_id='0987654321',
             birth_date='1990-01-01',
             registration_step=4,

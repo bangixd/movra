@@ -24,7 +24,7 @@ class ProfileModelTest(TestCase):
         self.client_user = User.objects.create_user(phone='09130001133', role=User.Role.CLIENT)
 
     def test_driver_profile_creation(self):
-        profile = DriverProfile.objects.create(user=self.driver_user, first_name='Ali', national_id='1234567890')
+        profile = DriverProfile.objects.create(user=self.driver_user, full_name='Ali', national_id='1234567890')
         self.assertEqual(profile.kyc_status, 'PENDING')
         self.assertIsNone(profile.kyc_submitted_at)
 

@@ -29,7 +29,7 @@ class ReferralRewardTest(TestCase):
         # راننده دعوت‌کننده
         self.referrer_user = User.objects.create_user(phone='09120000001', role=User.Role.DRIVER)
         self.referrer = DriverProfile.objects.create(
-            user=self.referrer_user, first_name='Referrer', last_name='Test',
+            user=self.referrer_user, full_name='Referrer Test',
             national_id='1111111111', birth_date='1990-01-01',
             referral_code='ABCD1234'
         )
@@ -38,7 +38,7 @@ class ReferralRewardTest(TestCase):
         # راننده جدید (دعوت‌شده)
         self.new_driver_user = User.objects.create_user(phone='09120000002', role=User.Role.DRIVER)
         self.new_driver = DriverProfile.objects.create(
-            user=self.new_driver_user, first_name='New', last_name='Driver',
+            user=self.new_driver_user, full_name='New Driver',
             national_id='2222222222', birth_date='1995-01-01',
             referred_by=self.referrer
         )
@@ -75,8 +75,7 @@ class ReferralRewardTest(TestCase):
         fresh_user = User.objects.create_user(phone='09120000003', role=User.Role.DRIVER)
         fresh_driver = DriverProfile.objects.create(
             user=fresh_user,
-            first_name='Fresh',
-            last_name='Driver',
+            full_name='Fresh Driver',
             national_id='3333333333',
             birth_date='1996-06-06',
             registration_step=4,

@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.views import APIView
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.http import HttpResponse
 from datetime import date
@@ -21,7 +21,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
 from campaigns.models import Campaign
 from campaigns.serializers import CampaignBriefSerializer, AvailableCampaignSerializer
-from permissions import IsDriverUser
+from permissions import IsDriverUser, IsAuthenticated, IsClientUser
 from services.tasks import update_earnings_task, fetch_and_store_trip_analysis
 from services.analytics_client import AnalyticsServiceClient
 from geo.models import DriverLocation
@@ -295,7 +295,6 @@ class TripViewSet(viewsets.ModelViewSet):
 
         return Response(TripDetailSerializer(trip).data)
 
-
 class DriverHomeView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsDriverUser]
 
@@ -357,3 +356,26 @@ class DriverHomeView(APIView):
             'available_campaigns': campaign_data,
             'unread_notifications': unread_notifications,
         })
+
+#------------- DRIVER RATING ------------#
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsClientUser])
+def rate_driver(request, trip_id):
+    try:
+        trip = Trip.objects.get(
+            id=trip_id,
+            campaign__brand_name__client__user=request.user,
+            status=Trip.Status.COMPLETED
+        )
+    except Trip.DoesNotExist:
+        return Response({"error": "سفر یافت نشد یا متعلق به شما نیست"}, status=404)
+
+    rating = request.data.get('rating')
+    if not rating or int(rating) not in range(1, 6):
+        return Response({"error": "امتیاز باید بین ۱ تا ۵ باشد"}, status=400)
+
+    trip.rating = int(rating)
+    trip.feedback = request.data.get('feedback', '')
+    trip.save()
+    return Response({"message": "امتیاز با موفقیت ثبت شد"})

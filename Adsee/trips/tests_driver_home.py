@@ -20,7 +20,7 @@ class DriverHomeTest(TestCase):
     def setUp(self):
         self.driver_user = User.objects.create_user(phone='09120001122', role=User.Role.DRIVER)
         self.driver_profile = DriverProfile.objects.create(
-            user=self.driver_user, first_name='Ali', last_name='Rezaei',
+            user=self.driver_user, full_name='Ali Rezaei',
             national_id='1234567890', birth_date='1990-01-01',
             registration_step=4, is_contract_accepted=True
         )

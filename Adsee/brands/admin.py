@@ -7,7 +7,7 @@ from .models import Brand
 class BrandAdmin(admin.ModelAdmin):
     list_display = ['logo_preview', 'name', 'client', 'is_active', 'created_at']
     list_filter = ['is_active', 'created_at']
-    search_fields = ['name', 'client__email', 'client__first_name', 'client__last_name']
+    search_fields = ['name', 'client__email', 'client__fullname']
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ['created_at', 'updated_at', 'logo_preview_large']
     fieldsets = (

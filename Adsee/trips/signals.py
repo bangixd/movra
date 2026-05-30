@@ -22,3 +22,23 @@ def register_vehicle_on_trip_creation(sender, instance, created, **kwargs):
         driver_id=driver.id,
         driver_name=driver_name,
     )
+
+@receiver(post_save, sender=Trip)
+def update_driver_rating(sender, instance, **kwargs):
+    if instance.rating is not None:
+        driver = instance.driver
+        # محاسبه میانگین امتیازات راننده
+        avg = Trip.objects.filter(
+            driver=driver,
+            rating__isnull=False,
+            status=Trip.Status.COMPLETED
+        ).aggregate(average=Avg('rating'))['average'] or 0.0
+        count = Trip.objects.filter(
+            driver=driver,
+            rating__isnull=False,
+            status=Trip.Status.COMPLETED
+        ).count()
+
+        driver.average_rating = round(avg, 2)
+        driver.total_ratings = count
+        driver.save(update_fields=['average_rating', 'total_ratings'])

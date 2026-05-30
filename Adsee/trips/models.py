@@ -38,6 +38,13 @@ class Trip(models.Model):
         default=Status.PENDING
     )
 
+    rating = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="امتیاز مشتری (۱ تا ۵)"
+    )
+    feedback = models.TextField(blank=True, null=True, help_text="بازخورد مشتری")
+
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
 

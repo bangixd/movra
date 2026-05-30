@@ -785,7 +785,8 @@ class DriverOnCampaignSerializer(serializers.Serializer):
     active_seconds = serializers.SerializerMethodField()
     last_location = serializers.SerializerMethodField()
     zone_name = serializers.SerializerMethodField()
-    rating = serializers.SerializerMethodField()
+    average_rating = serializers.FloatField(source='driver.average_rating')
+    total_ratings = serializers.IntegerField(source='driver.total_ratings')
 
     def get_active_seconds(self, obj):
         # obj یک Trip است

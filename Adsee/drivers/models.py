@@ -19,9 +19,11 @@ class DriverProfile(models.Model):
         related_name='driver_profile'
     )
 
+    average_rating = models.FloatField(default=0.0)
+    total_ratings = models.PositiveIntegerField(default=0)
+
     # اطلاعات مرحله ۱
-    first_name = models.CharField(max_length=50, blank=True, null=True)
-    last_name = models.CharField(max_length=50, blank=True, null=True)
+    full_name = models.CharField(max_length=120, blank=True, null=True)
     national_id = models.CharField(max_length=10, unique=True, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
     city = models.ForeignKey(
@@ -74,12 +76,6 @@ class DriverProfile(models.Model):
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-
-    @property
-    def full_name(self):
-        if self.first_name and self.last_name:
-            return f"{self.first_name} {self.last_name}"
-        return self.user.phone
 
     def __str__(self):
         return f"Driver: {self.full_name}"

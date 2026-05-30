@@ -26,8 +26,7 @@ class DriverRegistrationFlowTest(TestCase):
     def test_step1_submit_personal_info(self):
         """مرحله ۱: تکمیل اطلاعات شخصی"""
         response = self.client.patch(f'/api/drivers/profile/{self.profile.id}/', {
-            'first_name': 'علی',
-            'last_name': 'رضایی',
+            'full_name': 'رضایی علی',
             'national_id': '1234567890',
             'birth_date': '1990-01-01',
             'city': self.city.id
