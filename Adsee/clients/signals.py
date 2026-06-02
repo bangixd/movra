@@ -8,4 +8,4 @@ from .utils import update_kyc_status
 def trigger_client_document_processing(sender, instance, created, **kwargs):
     if created:
         process_client_document.delay(instance.id)
-    update_kyc_status(instance)
+    update_kyc_status(instance.user)

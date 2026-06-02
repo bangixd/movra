@@ -4,11 +4,14 @@ from rest_framework.test import APIClient
 from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
-from accounts.models import User, ClientProfile
+from accounts.models import User
+from clients.models import ClientProfile
 from brands.models import Brand
 from vehicles.models import VehicleType
+from django.contrib.gis.geos import Point, Polygon
+from geo.models import City
 from campaigns.models import (
-    Campaign, CampaignSetting, CampaignInvoice, PaymentTransaction, BannerType
+    Campaign, CampaignSetting, CampaignInvoice, PaymentTransaction, BannerType, CampaignDesign, CampaignArea
 )
 
 
@@ -19,6 +22,9 @@ class AddVehiclesTest(TestCase):
         self.client_profile = ClientProfile.objects.create(
             user=self.client_user, full_name='Client Sara', national_id='1234567890'
         )
+        # اضافه کردن محدوده (area)
+        city = City.objects.create(name='Test City', center=Point(51.38, 35.68, srid=4326))
+        polygon = Polygon(((51.0, 35.0), (51.0, 36.0), (52.0, 36.0), (52.0, 35.0), (51.0, 35.0)), srid=4326)
         self.brand = Brand.objects.create(client=self.client_profile, name='Brand', slug='b')
         self.vehicle_type = VehicleType.objects.create(name='Sedan', base_hourly_rate=50000)
         self.campaign = Campaign.objects.create(
@@ -28,6 +34,17 @@ class AddVehiclesTest(TestCase):
             start_date=date.today(),
             end_date=date.today() + timedelta(days=5),
             status=Campaign.Status.ACTIVE
+        )
+        self.design = CampaignDesign.objects.create(
+            campaign=self.campaign,
+            design_type=CampaignDesign.DesignType.USER_UPLOAD,  # یا هر نوع معتبر
+            status=CampaignDesign.DesignStatus.COMPLETED
+        )
+        self.area = CampaignArea.objects.create(
+            campaign=self.campaign,
+            area_type=CampaignArea.AreaType.FREE_AREA,
+            city=city,
+            region_polygon=polygon
         )
         CampaignSetting.objects.create(
             campaign=self.campaign,

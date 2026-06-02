@@ -1,8 +1,8 @@
-# clients/tests_reverse_geocode.py
 from django.test import TestCase
 from rest_framework.test import APIClient
 from unittest.mock import patch
-from accounts.models import User, ClientProfile
+from accounts.models import User
+from clients.models import ClientProfile
 
 class ReverseGeocodeTest(TestCase):
     def setUp(self):

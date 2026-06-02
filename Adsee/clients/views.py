@@ -25,15 +25,16 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
+    queryset=ClientProfile.objects.all()
     serializer_class = ClientProfileSerializer
     permission_classes = [IsAuthenticated, IsClientOrAdmin, IsOwnerOrAdmin]
     throttle_classes = [UserRateThrottle]
     throttle_scope = 'user'
-
-    def get_queryset(self):
-        if self.request.user.is_staff:
-            return ClientProfile.objects.all()
-        return ClientProfile.objects.filter(user=self.request.user)
+    #
+    # def get_queryset(self):
+    #     if self.request.user.is_staff:
+    #         return ClientProfile.objects.all()
+    #     return ClientProfile.objects.filter(user=self.request.user)
 
     def get_serializer(self, *args, **kwargs):
         if self.request.method == 'POST':

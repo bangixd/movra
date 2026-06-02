@@ -2,18 +2,20 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.utils import timezone
 from datetime import date, timedelta
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, Polygon
 
-from accounts.models import User, ClientProfile, DriverProfile
+from accounts.models import User
+from drivers.models import DriverProfile
+from clients.models import ClientProfile
 from brands.models import Brand
 from vehicles.models import VehicleType, Vehicle
 from campaigns.models import (
     Campaign, CampaignSetting, CampaignDesign, CampaignArea,
-    CampaignGoal, BannerType
+    CampaignGoal, BannerType, Template
 )
 from geo.models import City
 from trips.models import Trip, TripAnalysis
-from printshop.models import PrintShopProfile
+from print_shops.models import PrintShopProfile
 
 
 class ClientCampaignListTest(TestCase):
@@ -49,6 +51,7 @@ class ClientCampaignListTest(TestCase):
         # ---------- هدف و نوع بنر ----------
         self.goal = CampaignGoal.objects.create(name='افزایش فروش', is_active=True)
         self.banner_type = BannerType.objects.create(name='استیکر روی درها', is_active=True)
+        template = Template.objects.create(name='Test Template', variant='test-1')
         print("✅ هدف و نوع بنر ساخته شد")
 
         # ---------- شهر ----------
@@ -90,16 +93,23 @@ class ClientCampaignListTest(TestCase):
             design_type=CampaignDesign.DesignType.DEFAULT_TEMPLATE,
             banner_type=self.banner_type,
             print_shop=self.print_shop,
+            template=template,
             status=CampaignDesign.DesignStatus.COMPLETED
         )
-        CampaignArea.objects.create(
+        # CampaignArea.objects.create(
+        #     campaign=self.active_campaign,
+        #     area_type=CampaignArea.AreaType.CIRCLE,
+        #     city=self.city,
+        #     center_point=Point(51.38, 35.68, srid=4326),
+        #     radius_meter=5000
+        # )
+        polygon = Polygon(((51.0, 35.0), (51.0, 36.0), (52.0, 36.0), (52.0, 35.0), (51.0, 35.0)), srid=4326)
+        self.area = CampaignArea.objects.create(
             campaign=self.active_campaign,
-            area_type=CampaignArea.AreaType.CIRCLE,
+            area_type=CampaignArea.AreaType.FREE_AREA,
             city=self.city,
-            center_point=Point(51.38, 35.68, srid=4326),
-            radius_meter=5000
+            region_polygon=polygon
         )
-
         # راننده برای کمپین فعال
         self.driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
         self.driver_profile = DriverProfile.objects.create(

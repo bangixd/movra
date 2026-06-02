@@ -6,10 +6,10 @@ from .views import ClientProfileViewSet, ClientDocumentViewSet, reverse_geocode,
 router = DefaultRouter()
 router.register(r'documents', ClientDocumentViewSet, basename='client-document')
 router.register(r'', ClientProfileViewSet, basename='client-profile')
-urlpatterns = router.urls + [
+urlpatterns =[
     path('campaigns/', ClientCampaignListView.as_view(), name='client-campaign-list'),
     path('reports/summary/', ClientReportSummaryView.as_view(), name='report-summary'),
     path('reports/peak-hours/', ClientPeakHoursView.as_view(), name='report-peak-hours'),
     path('reports/billboard-comparison/', BillboardComparisonView.as_view(), name='report-billboard'),
     path('reverse-geocode/', reverse_geocode, name='reverse-geocode'),
-]
+]+ router.urls

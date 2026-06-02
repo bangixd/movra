@@ -5,8 +5,8 @@ from .views import WalletViewSet, BankAccountViewSet, WithdrawalRequestView, Dep
 router = DefaultRouter()
 router.register(r'', WalletViewSet, basename='wallet')
 router.register(r'bank', BankAccountViewSet, basename='bank-account')
-urlpatterns = router.urls + [
+urlpatterns =  [
     path('withdraw/', WithdrawalRequestView.as_view(), name='withdraw'),
     path('deposit/', DepositView.as_view(), name='deposit'),
 
-]
+] + router.urls

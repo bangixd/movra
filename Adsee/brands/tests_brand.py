@@ -1,7 +1,8 @@
 from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
-from accounts.models import User, ClientProfile
+from accounts.models import User
+from clients.models import ClientProfile
 from brands.models import Brand, BrandCategory
 from geo.models import City
 from campaigns.models import Campaign, CampaignSetting

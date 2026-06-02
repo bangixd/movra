@@ -28,7 +28,7 @@ class ClientDocumentAPITest(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         file = SimpleUploadedFile("doc.jpg", b"file_content", content_type="image/jpeg")
         response = self.api.post('/api/clients/documents/', {
-            'document_type': 'NATIONAL_ID',
+            'document_type': 'NATIONAL_ID_FRONT',
             'file': file,
         }, format='multipart')
         self.assertEqual(response.status_code, 201)

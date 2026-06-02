@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from decimal import Decimal
 from rest_framework.response import Response
 from .models import Wallet, Transaction, BankAccount
 from .serializers import TransactionSerializer, WalletSummarySerializer, BankAccountSerializer
@@ -48,6 +49,7 @@ class WithdrawalRequestView(APIView):
 
     def post(self, request):
         amount = request.data.get('amount')
+        print('amount', amount)
         if not amount:
             return Response({"error": "مبلغ برداشت الزامی است"}, status=400)
         try:
@@ -56,6 +58,7 @@ class WithdrawalRequestView(APIView):
             return Response({"error": "مبلغ نامعتبر"}, status=400)
 
         wallet = request.user.wallet
+        print(wallet.balance,' balance')
         if wallet.balance < amount:
             return Response({"error": "موجودی کافی نیست"}, status=400)
 

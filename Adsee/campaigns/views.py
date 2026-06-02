@@ -31,6 +31,7 @@ from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignS
 from permissions import IsClientUser, IsOwnerOrAdmin
 from vehicles.models import VehicleType
 from mixins import SafeGetQuerysetMixin
+from .pricing import get_rule_value
 from .utils import generate_invoice_number
 
 class CampaignViewSet(ModelViewSet):
@@ -349,6 +350,11 @@ class PaymentVerifyView(APIView):
                 invoice.paid_at = timezone.now()
                 invoice.save()
 
+                # 🔥 فعال‌سازی کمپین
+                campaign = transaction.invoice.campaign
+                campaign.status = Campaign.Status.ACTIVE
+                campaign.save()
+
                 # اعمال تغییرات بر اساس نوع modification
                 self._apply_modifications(invoice)
 
@@ -557,7 +563,7 @@ class CampaignExtendView(APIView):
         daily_vehicle_driver_cost = (
             base_cost['vehicle'] + base_cost['driver']
         ) / campaign.setting.active_days
-        extra_amount = daily_vehicle_driver_cost * additional_days
+        extra_amount = Decimal(daily_vehicle_driver_cost * additional_days)
 
         # ایجاد فاکتور با نوع EXTEND
         invoice = CampaignInvoice.objects.create(
@@ -641,14 +647,8 @@ class CampaignAddVehiclesView(APIView):
 
         # محاسبهٔ هزینهٔ افزایش خودرو (فقط هزینهٔ راننده برای خودروهای جدید)
         base_cost = calculate_campaign_cost(campaign)
-        # هزینهٔ یک خودرو = هزینهٔ راننده / تعداد خودروهای فعلی
-        if campaign.setting.max_driver > 0:
-            per_vehicle_cost = base_cost['driver'] / campaign.setting.max_driver
-        else:
-            # اگر قبلاً صفر بود، یک مقدار پیش‌فرض (مثلاً از قوانین)
-            from .pricing import get_rule_value
-            per_vehicle_cost = get_rule_value('DRIVER_COST_PER_DAY', Decimal('200000')) * campaign.setting.active_days
-        extra_amount = per_vehicle_cost * additional_vehicles
+        per_vehicle_cost = get_rule_value('DRIVER_COST_PER_DAY', Decimal('200000')) * campaign.setting.active_days
+        extra_amount = Decimal(per_vehicle_cost * additional_vehicles)
 
         invoice = CampaignInvoice.objects.create(
             campaign=campaign,
@@ -670,6 +670,7 @@ class CampaignAddVehiclesView(APIView):
                 'total': float(extra_amount * Decimal('1.09')),
             }
         )
+        print(invoice.snapshot, '///////////////////////////////')
 
         gateway = ZarinpalGateway()
         success, payment_url_or_error, error = gateway.send_request(
@@ -738,7 +739,7 @@ class CampaignChangeDesignView(APIView):
             old_design_cost = self._calculate_design_cost(old_design_data)
 
         # مابه‌التفاوت
-        extra_amount = new_design_cost - old_design_cost
+        extra_amount = Decimal(new_design_cost - old_design_cost)
 
         if extra_amount <= 0:
             # بدون نیاز به پرداخت اضافی، مستقیماً تغییرات را اعمال کن

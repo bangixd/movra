@@ -6,6 +6,7 @@ from clients.models import ClientProfile
 from brands.models import Brand
 from geo.models import City, Neighborhood, SuggestedRoute
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryField
+from rest_framework_gis import serializers as gis_serializers
 from .utils import generate_invoice_number
 from django.utils import timezone
 from print_shops.serializers import PrintShopProfileSerializer
@@ -27,6 +28,8 @@ class ClientProfileMiniSerializer(serializers.ModelSerializer):
 class CampaignSerializer(serializers.ModelSerializer):
     client_detail = ClientProfileMiniSerializer(source='client', read_only=True)
     brand_detail = BrandMiniSerializer(source='brand_name', read_only=True)
+    region = gis_serializers.GeometryField(source='area.region_polygon', read_only=True)
+
 
     class Meta:
         model = Campaign
@@ -152,6 +155,8 @@ class CampaignDesignSerializer(serializers.ModelSerializer):
     print_shop_detail = PrintShopProfileSerializer(source='print_shop', read_only=True)
     template_detail = TemplateSerializer(source='template', read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
+    banner_type = serializers.PrimaryKeyRelatedField(read_only=True)
+
 
     class Meta:
         model = CampaignDesign
@@ -175,6 +180,7 @@ class CampaignDesignSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
+            'campaign',
             'created_at',
             'updated_at',
             'product_images',

@@ -5,7 +5,9 @@ from rest_framework.test import APIClient
 from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
-from accounts.models import User, ClientProfile
+from vehicles.models import VehicleType
+from accounts.models import User
+from clients.models import ClientProfile
 from brands.models import Brand
 from campaigns.models import (
     Campaign, CampaignSetting, CampaignDesign, CampaignInvoice,
@@ -44,6 +46,7 @@ class ChangeDesignTest(TestCase):
             'design_type': 'CUSTOM_DESIGN',
             'banner_type': self.banner_type.id,
         }, format='json')
+        print(response.status_code, response.data, '**************************************')
         self.assertEqual(response.status_code, 200)
         self.assertIn('payment_url', response.data)
         self.assertTrue(CampaignInvoice.objects.filter(modification_type='CHANGE_DESIGN').exists())

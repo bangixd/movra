@@ -1,10 +1,11 @@
-# clients/tests_profile.py
+from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
-from accounts.models import User, ClientProfile
+from accounts.models import User
+from clients.models import ClientProfile
 from brands.models import Brand
 from campaigns.models import Campaign
-from wallet.models import Wallet
+from wallets.models import Wallet
 
 class ClientProfileTest(TestCase):
     def setUp(self):
@@ -21,19 +22,19 @@ class ClientProfileTest(TestCase):
         self.api.force_authenticate(user=self.client_user)
 
     def test_profile_fields(self):
-        response = self.api.get(f'/api/clients/profile/{self.profile.id}/')
+        response = self.api.get(f'/api/clients/{self.profile.id}/')
         self.assertEqual(response.status_code, 200)
         data = response.data
         self.assertEqual(data['wallet_balance'], '50000.00')
         self.assertEqual(data['active_campaigns_count'], 2)  # ACTIVE و PAUSED
 
     def test_my_profile_me_endpoint(self):
-        response = self.api.get('/api/clients/profile/me/')
+        response = self.api.get('/api/clients/me/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['full_name'], 'Sara')
 
     def test_update_my_profile(self):
-        response = self.api.patch('/api/clients/profile/me/', {'full_name': 'سارا جدید'}, format='json')
+        response = self.api.patch('/api/clients/me/', {'full_name': 'سارا جدید'}, format='json')
         self.assertEqual(response.status_code, 200)
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.full_name, 'سارا جدید')

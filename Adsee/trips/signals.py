@@ -1,6 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Trip
+from django.db.models import Avg
 from campaigns.models import Campaign
 from services.tasks import register_vehicle_task
 

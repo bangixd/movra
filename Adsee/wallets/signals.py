@@ -24,9 +24,6 @@ def create_income_transaction(sender, instance, created, **kwargs):
                 description=f'درآمد سفر #{instance.id}',
                 trip=instance
             )
-            wallet.balance += instance.earnings
-            wallet.total_earnings += instance.earnings
-            wallet.save()
 
 @receiver(post_save, sender=Trip)
 def process_referral_reward(sender, instance, created, **kwargs):
@@ -64,3 +61,16 @@ def process_referral_reward(sender, instance, created, **kwargs):
                     description=f'جایزه دعوت راننده {driver.full_name}',
                     trip=instance
                 )
+
+@receiver(post_save, sender=Transaction)
+def update_wallet_balance(sender, instance, created, **kwargs):
+    if not created:   # فقط بار اول
+        return
+    if instance.status == Transaction.Status.SUCCESS:
+        wallet = instance.wallet
+        if instance.transaction_type == Transaction.TransactionType.INCOME:
+            wallet.balance += instance.amount
+            wallet.total_earnings += instance.amount
+        elif instance.transaction_type == Transaction.TransactionType.WITHDRAWAL:
+            wallet.balance -= instance.amount
+        wallet.save()

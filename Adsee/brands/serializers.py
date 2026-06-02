@@ -62,10 +62,12 @@ class BrandCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
         fields = [
+            'id',
             'name', 'slug', 'logo', 'description',
             'city', 'category', 'phone', 'website',
-            'whatsapp', 'telegram'
+            'whatsapp', 'telegram', 'created_at', 'updated_at'
         ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
     def create(self, validated_data):
         validated_data['client'] = self.context['request'].user.client_profile

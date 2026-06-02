@@ -10,7 +10,7 @@ from clients.models import ClientProfile
 from brands.models import Brand
 from vehicles.models import VehicleType, Vehicle
 from campaigns.models import (
-    Campaign, CampaignSetting, CampaignArea, CampaignCost, CampaignInvoice
+    Campaign, CampaignSetting, CampaignArea, CampaignInvoice
 )
 from geo.models import Province, City
 from trips.models import Trip

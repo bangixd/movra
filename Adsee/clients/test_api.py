@@ -38,7 +38,7 @@ class ClientProfileAPITest(TestCase):
             company_name='Other Inc.',
         )
         response = self.api.get(f'/api/clients/{other_profile.id}/')
-        self.assertEqual(response.status_code, 403)  # یا 403
+        self.assertEqual(response.status_code, 403)
         print("✅ Other profile not visible")
 
     def test_create_profile(self):
