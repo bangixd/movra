@@ -80,6 +80,7 @@ class DriverDocumentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        print(user, 'this is user')
         if user.is_staff:
             return DriverDocument.objects.all()
         return DriverDocument.objects.filter(user=user)

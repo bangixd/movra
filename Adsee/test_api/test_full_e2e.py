@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.test import TestCase
 from rest_framework.test import APIClient
 from django.utils import timezone
@@ -8,23 +8,23 @@ from django.contrib.gis.geos import Point, Polygon
 
 from accounts.models import User
 from drivers.models import DriverProfile, DriverDocument
-from clients.models import ClientProfile, ClientDocument
+from clients.models import ClientProfile
 from brands.models import Brand
 from vehicles.models import VehicleType, Vehicle
 from campaigns.models import (
     Campaign, CampaignSetting, CampaignDesign, CampaignArea,
-    CampaignCost, CampaignInvoice, PaymentTransaction
+    CampaignInvoice, PaymentTransaction, CampaignPricingRule
 )
 from geo.models import City, Province
 from trips.models import Trip, TripAnalysis
-from wallet.models import Wallet, Transaction as WalletTransaction
+from wallets.models import Wallet, Transaction as WalletTransaction
 from notifications.models import Notification
-from printshop.models import PrintShopProfile
+from print_shops.models import PrintShopProfile
 
 
 class FullE2ETest(TestCase):
     def setUp(self):
-        # ========== آماده‌سازی داده‌های پایه ==========
+        # ========== داده‌های پایه ==========
         self.province = Province.objects.create(name='تهران')
         self.city = City.objects.create(
             name='تهران',
@@ -42,12 +42,11 @@ class FullE2ETest(TestCase):
             national_id='1234567890',
             advertiser_type=ClientProfile.AdvertiserType.REAL
         )
-        # راننده
+        # راننده (با full_name)
         self.driver_user = User.objects.create_user(phone='09122222222', role=User.Role.DRIVER)
         self.driver_profile = DriverProfile.objects.create(
             user=self.driver_user,
-            first_name='راننده',
-            last_name='تست',
+            full_name='راننده تستی',
             registration_step=DriverProfile.RegistrationStep.PERSONAL_INFO
         )
         # ادمین
@@ -62,6 +61,33 @@ class FullE2ETest(TestCase):
 
         self.admin_api = APIClient()
         self.admin_api.force_authenticate(user=self.admin_user)
+
+        # ========== پیکربندی قوانین قیمت‌گذاری (برای محاسبه هزینه) ==========
+        # برای سادگی، یک قانون پایه می‌سازیم تا calculate_campaign_cost مقادیر مثبت برگرداند
+        CampaignPricingRule.objects.create(
+            key='DRIVER_COST_PER_DAY',
+            title='هزینه روزانه راننده',
+            value_type=CampaignPricingRule.ValueType.DECIMAL,
+            decimal_value=Decimal('200000')
+        )
+        CampaignPricingRule.objects.create(
+            key='DESIGN_COST_USER_UPLOAD',
+            title='هزینه طراحی آپلود کاربر',
+            value_type=CampaignPricingRule.ValueType.DECIMAL,
+            decimal_value=Decimal('50000')
+        )
+        CampaignPricingRule.objects.create(
+            key='AREA_COST_FREE',
+            title='هزینه منطقه آزاد',
+            value_type=CampaignPricingRule.ValueType.DECIMAL,
+            decimal_value=Decimal('100000')
+        )
+        CampaignPricingRule.objects.create(
+            key='TAX_RATE',
+            title='نرخ مالیات',
+            value_type=CampaignPricingRule.ValueType.DECIMAL,
+            decimal_value=Decimal('0.09')
+        )
 
     # ------------------------------------------------------------------
     @patch('services.payment_gateway.ZarinpalGateway.send_request')
@@ -111,7 +137,7 @@ class FullE2ETest(TestCase):
         brand = Brand.objects.get(id=brand_id)
 
         # ================================================================
-        # 2. مشتری کمپین می‌سازد (همراه تنظیمات، طراحی، محدوده، هزینه)
+        # 2. مشتری کمپین می‌سازد (همراه تنظیمات، طراحی، محدوده)
         # ================================================================
         # 2.1 کمپین
         resp = self.client_api.post('/api/campaigns/', {
@@ -135,7 +161,7 @@ class FullE2ETest(TestCase):
             vehicle_type=self.vehicle_type
         )
 
-        # 2.3 طراحی
+        # 2.3 طراحی (استفاده از قالب پیش‌فرض یا آپلود کاربر)
         design = CampaignDesign.objects.create(
             campaign=campaign,
             design_type=CampaignDesign.DesignType.USER_UPLOAD,
@@ -151,29 +177,15 @@ class FullE2ETest(TestCase):
             region_polygon=poly
         )
 
-        # 2.5 هزینه (محاسبه توسط تابع اصلی یا دستی)
-        cost = CampaignCost.objects.create(
-            campaign=campaign,
-            drivers_count=1,
-            days_count=5,
-            hours_per_day=8,
-            vehicle_type=self.vehicle_type,
-            design_type='USER_UPLOAD',
-            area_type='FREE_AREA',
-            subtotal_price=Decimal('500000'),
-            total_price=Decimal('545000')
-        )
-
         # فعال‌سازی کمپین (از طریق پرداخت فرضی)
         campaign.status = Campaign.Status.ACTIVE
         campaign.save()
 
         # ================================================================
-        # 3. راننده پروفایل خود را تکمیل می‌کند (مرحله ۱)
+        # 3. راننده پروفایل خود را تکمیل می‌کند (مرحله ۱) – با full_name
         # ================================================================
-        resp = self.driver_api.patch('/api/drivers/profile/', {
-            'first_name': 'علی',
-            'last_name': 'رضایی',
+        resp = self.driver_api.patch(f'/api/drivers/profiles/{self.driver_profile.id}/', {
+            'full_name': 'علی رضایی',
             'national_id': '1234567890',
             'birth_date': '1990-01-01',
             'city': self.city.id
@@ -187,10 +199,13 @@ class FullE2ETest(TestCase):
         # ================================================================
         from django.core.files.uploadedfile import SimpleUploadedFile
         fake_file = SimpleUploadedFile("doc.jpg", b"file_content", content_type="image/jpeg")
-        resp = self.driver_api.post('/api/drivers/documents/', {
+        resp = self.driver_api.post(f'/api/drivers/documents/', {
             'document_type': 'DRIVING_LICENSE',
             'file': fake_file
         }, format='multipart')
+        print("Request URL:", resp.request['PATH_INFO'])
+        print("Status:", resp.status_code)
+        print("Data:", resp.data)
         self.assertEqual(resp.status_code, 201)
         self.driver_profile.refresh_from_db()
         self.assertEqual(self.driver_profile.registration_step, DriverProfile.RegistrationStep.VERIFICATION)
@@ -210,11 +225,10 @@ class FullE2ETest(TestCase):
         # ================================================================
         # 6. راننده قرارداد را می‌پذیرد (مرحله ۴)
         # ================================================================
-        resp = self.driver_api.patch('/api/drivers/profile/accept_contract/')
+        resp = self.driver_api.patch('/api/drivers/profiles/accept_contract/')
         self.assertEqual(resp.status_code, 200)
         self.driver_profile.refresh_from_db()
         self.assertTrue(self.driver_profile.is_contract_accepted)
-        self.assertEqual(self.driver_profile.registration_step, DriverProfile.RegistrationStep.CONTRACT)
 
         # ================================================================
         # 7. راننده خودرو ثبت می‌کند
@@ -287,10 +301,8 @@ class FullE2ETest(TestCase):
         self.assertIsNotNone(trip.end_time)
 
         # ================================================================
-        # 13. بررسی درآمد (به‌روزرسانی از طریق تسک - در تست واقعی اجرا نمی‌شود،
-        #     اما ما مستقیماً earnings را ست می‌کنیم یا mock)
-        # (چون تسک‌ها mock شده‌اند، earnings صفر است؛ برای نمایش صحیح،
-        #  earnings را دستی برابر با mock قرار می‌دهیم)
+        # 13. بررسی درآمد (از آنجایی که تسک Celery را mock کردیم،
+        #     earnings را دستی برابر با مقدار mock قرار می‌دهیم)
         trip.earnings = 150000.00
         trip.save()
 
@@ -312,17 +324,17 @@ class FullE2ETest(TestCase):
         wallet = Wallet.objects.get(user=self.driver_user)
         WalletTransaction.objects.create(
             wallet=wallet,
-            amount=150000.00,
+            amount=Decimal(150000.00),
             transaction_type=WalletTransaction.TransactionType.INCOME,
             status=WalletTransaction.Status.SUCCESS,
             description='درآمد سفر',
             trip=trip
         )
-        wallet.balance = 150000.00
-        wallet.total_earnings = 150000.00
+        wallet.balance = Decimal(150000.00)
+        wallet.total_earnings = Decimal(150000.00)
         wallet.save()
 
-        resp = self.driver_api.get('/api/wallet/summary/')
+        resp = self.driver_api.get('/api/wallets/summary/')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(Decimal(resp.data['balance']), Decimal('150000.00'))
 

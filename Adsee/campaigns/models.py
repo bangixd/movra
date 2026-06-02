@@ -463,30 +463,3 @@ class CampaignPackage(models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2)  # قیمت کل پکیج
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-# class CampaignCost(models.Model):
-#     class Status(models.TextChoices):
-#         DRAFT = "DRAFT", "Draft"
-#         CONFIGURING = "CONFIGURING", "Configuring"
-#         READY_FOR_PAYMENT = "READY_FOR_PAYMENT", "Ready For Payment"
-#         PENDING_PAYMENT = "PENDING_PAYMENT", "Pending Payment"
-#         PAID = "PAID", "Paid"
-#         EXPIRED = "EXPIRED", "Expired"
-#         CANCELED = "CANCELED", "Canceled"
-#
-#     campaign = models.OneToOneField("Campaign", on_delete=models.CASCADE, related_name="cost")
-#     drivers_count = models.PositiveIntegerField(default=1)
-#     days_count = models.PositiveIntegerField(default=1)
-#     hours_per_day = models.PositiveIntegerField(default=1)
-#     vehicle_type = models.ForeignKey("vehicles.VehicleType", on_delete=models.PROTECT, null=True, blank=True)
-#     design_type = models.CharField(max_length=30, null=True, blank=True)
-#     area_type = models.CharField(max_length=30, null=True, blank=True)
-#     subtotal_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-#     discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-#     tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-#     total_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-#     status = models.CharField(max_length=30, choices=Status.choices, default=Status.DRAFT)
-#     payment_expires_at = models.DateTimeField(null=True, blank=True)
-#     paid_at = models.DateTimeField(null=True, blank=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)

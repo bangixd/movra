@@ -41,6 +41,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             'goal',
             'brand_name',
             'brand_detail',
+            'region',
             'description',
             'start_date',
             'end_date',

@@ -22,16 +22,13 @@ def process_driver_document(self, document_id):
         doc = DriverDocument.objects.get(id=document_id)
     except DriverDocument.DoesNotExist:
         return
-
-    # شبیه‌سازی یک پردازش سنگین (مثلاً بررسی سایز، ارسال به KYC)
-    time.sleep(2)  # بعداً حذف شود
     # مثلاً می‌توانید سایز فایل را چک کنید
-    # file_size = doc.file.size
-    # if file_size > 10 * 1024 * 1024:  # بزرگتر از ۱۰ مگابایت
-    #     doc.status = DriverDocument.ApprovalStatus.REJECTED
-    #     doc.reject_reason = "حجم فایل بیش از حد مجاز است"
-    #     doc.save()
-    #     return
+    file_size = doc.file.size
+    if file_size > 10 * 1024 * 1024:  # بزرگتر از ۱۰ مگابایت
+        doc.status = DriverDocument.ApprovalStatus.REJECTED
+        doc.reject_reason = "حجم فایل بیش از حد مجاز است"
+        doc.save()
+        return
 
     doc.processed = True
     doc.save()
