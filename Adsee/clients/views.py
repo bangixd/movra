@@ -181,9 +181,12 @@ class ClientDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsClientOrAdmin]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
+        user = self.request.user
+        if not user.is_authenticated:
+            return ClientDocument.objects.none()
+        if user.is_staff:
             return ClientDocument.objects.all()
-        return ClientDocument.objects.filter(user=self.request.user)
+        return ClientDocument.objects.filter(user=user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

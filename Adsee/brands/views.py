@@ -22,6 +22,8 @@ class BrandViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return Brand.objects.none()
         if user.is_staff:
             qs = Brand.objects.all()
         else:

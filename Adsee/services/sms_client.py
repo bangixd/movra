@@ -17,9 +17,9 @@ class MeliPayamakClient:
         message: متن پیامک
         """
         payload = {
-            'fromNumber': self.from_number,
-            'toNumbers': to,
-            'messageContent': message,
+            'from': self.from_number,
+            'to': to,
+            'text': message,
         }
         try:
             response = requests.post(

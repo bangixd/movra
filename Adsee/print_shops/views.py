@@ -15,9 +15,12 @@ class PrintShopProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsPrintShopUser]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
+        user = self.request.user
+        if not user.is_authenticated:
+            return PrintShopProfile.objects.none()
+        if user.is_staff:
             return PrintShopProfile.objects.all()
-        return PrintShopProfile.objects.filter(user=self.request.user)
+        return PrintShopProfile.objects.filter(user=user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

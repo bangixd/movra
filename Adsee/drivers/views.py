@@ -15,6 +15,8 @@ class DriverProfileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return DriverProfile.objects.none()
         if user.is_staff:
             return DriverProfile.objects.all()
         return DriverProfile.objects.filter(user=user)
@@ -80,7 +82,8 @@ class DriverDocumentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        print(user, 'this is user')
+        if not user.is_authenticated:
+            return DriverDocument.objects.none()
         if user.is_staff:
             return DriverDocument.objects.all()
         return DriverDocument.objects.filter(user=user)

@@ -9,7 +9,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        user = self.request.user
+        if not user.is_authenticated:
+            return Notification.objects.none()
+        return Notification.objects.filter(recipient=user)
 
     @action(detail=True, methods=['post'])
     def read(self, request, pk=None):

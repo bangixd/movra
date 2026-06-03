@@ -39,7 +39,10 @@ class BankAccountViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return BankAccount.objects.filter(driver__user=self.request.user)
+        user = self.request.user
+        if not user.is_authenticated:
+            return BankAccount.objects.none()
+        return BankAccount.objects.filter(driver__user=user)
 
     def perform_create(self, serializer):
         serializer.save(driver=self.request.user.driver_profile)

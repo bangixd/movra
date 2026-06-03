@@ -1,18 +1,24 @@
 services:
   db:
-    image: postgis/postgis:16-3.4
+    image: postgis/postgis:14-3.3
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-adsee_db}
+      POSTGRES_USER: ${POSTGRES_USER:-adsee_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
     ports:
       - "5433:5432"
-    environment:
-      POSTGRES_DB: adsee_db
-      POSTGRES_USER: adsee_user
-      POSTGRES_PASSWORD: 8E_S1@.?7Pm-aVzjBztW
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U adsee_user -d adsee_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
     volumes:
       - redis_data:/data
@@ -25,42 +31,37 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     environment:
-    - POSTGRES_DB=adsee_db
-    - POSTGRES_USER=adsee_user
-    - POSTGRES_PASSWORD=8E_S1@.?7Pm-aVzjBztW
-    - DB_HOST=db
-    - DB_PORT=5433
-    - DJANGO_SETTINGS_MODULE=Adsee.settings
-    - CELERY_BROKER_URL=redis://redis:6379/0
-    - ANALYTICS_SERVICE_URL=http://analytics_service:8000/v1
-    - ANALYTICS_API_KEY=YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE
-    - SECRET_KEY=wvvsna2jpe^ptl2^cdh&2+6%s2mmmj%c8tma%3^cc7#e-+9wis
+      - DJANGO_SETTINGS_MODULE=Adsee.settings
+      - POSTGRES_DB=${POSTGRES_DB:-adsee_db}
+      - POSTGRES_USER=${POSTGRES_USER:-adsee_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
+      - DB_HOST=db
+      - DB_PORT=5433
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://host.docker.internal:8000/v1}
+      - ANALYTICS_API_KEY=${ANALYTICS_API_KEY:-YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE}
+      - SECRET_KEY=${SECRET_KEY:-wvvsna2jpe^ptl2^cdh&2+6%s2mmmj%c8tma%3^cc7#e-+9wis}
     depends_on:
       - db
       - redis
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()\"" ]
-      interval: 10s
-      timeout: 5s
-      retries: 6
 
   celery_worker:
     build: .
-    command: celery -A Adsee worker -l info
+    command: celery -A Adsee worker -l info --pool=solo
     volumes:
       - .:/app
     environment:
-    - POSTGRES_DB=adsee_db
-    - POSTGRES_USER=adsee_user
-    - POSTGRES_PASSWORD=8E_S1@.?7Pm-aVzjBztW
-    - DB_HOST=db
-    - DB_PORT=5433
-    - DJANGO_SETTINGS_MODULE=Adsee.settings
-    - CELERY_BROKER_URL=redis://redis:6379/0
-    - ANALYTICS_SERVICE_URL=http://analytics_service:8000/v1
-    - ANALYTICS_API_KEY=YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE
-    - SECRET_KEY=wvvsna2jpe^ptl2^cdh&2+6%s2mmmj%c8tma%3^cc7#e-+9wis
+      - DJANGO_SETTINGS_MODULE=Adsee.settings
+      - POSTGRES_DB=${POSTGRES_DB:-adsee_db}
+      - POSTGRES_USER=${POSTGRES_USER:-adsee_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
+      - DB_HOST=db
+      - DB_PORT=5433
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://host.docker.internal:8000/v1}
+      - ANALYTICS_API_KEY=${ANALYTICS_API_KEY:-YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE}
+      - SECRET_KEY=${SECRET_KEY:-wvvsna2jpe^ptl2^cdh&2+6%s2mmmj%c8tma%3^cc7#e-+9wis}
     depends_on:
       - db
       - redis
