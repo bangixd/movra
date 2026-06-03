@@ -36,7 +36,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-adsee_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
       - DB_HOST=db
-      - DB_PORT=5433
+      - DB_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
       - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://host.docker.internal:8000/v1}
       - ANALYTICS_API_KEY=${ANALYTICS_API_KEY:-YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE}
@@ -57,7 +57,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-adsee_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
       - DB_HOST=db
-      - DB_PORT=5433
+      - DB_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
       - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://host.docker.internal:8000/v1}
       - ANALYTICS_API_KEY=${ANALYTICS_API_KEY:-YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE}

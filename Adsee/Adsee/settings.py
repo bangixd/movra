@@ -9,8 +9,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # GDAL_LIBRARY_PATH
-GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
-GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
+# GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
+# GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
 
 # EXTERNAL API
 ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL")
@@ -224,7 +224,7 @@ OTP_CODE_EXPIRY_MINUTES = os.getenv("OTP_CODE_EXPIRY_MINUTES")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://localhost:6379/1",
+        "LOCATION": "redis://redis:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
