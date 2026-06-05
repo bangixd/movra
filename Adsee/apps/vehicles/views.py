@@ -5,7 +5,7 @@ from .serializers import (
     VehicleListSerializer,
     VehicleDetailSerializer,
 )
-from permissions import IsAdminOrReadOnly, IsDriverUser
+from utils.permissions import IsAdminOrReadOnly, IsDriverUser
 
 
 class VehicleTypeViewSet(viewsets.ModelViewSet):

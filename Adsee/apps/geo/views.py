@@ -7,7 +7,7 @@ from .serializers import (
     NeighborhoodSerializer, SuggestedRouteSerializer,
     DriverLocationCreateSerializer, DriverLocationReadSerializer, BatchLocationSerializer)
 from rest_framework.decorators import action
-from permissions import IsDriverUser
+from utils.permissions import IsDriverUser
 from django.contrib.gis.geos import Point
 
 

@@ -47,7 +47,6 @@ class TripCreateSerializer(serializers.ModelSerializer):
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message_dict)
 
-
 class TripStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trip
@@ -56,7 +55,6 @@ class TripStatusUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # این متد در ویوهای اکشن‌ها اورراید می‌شود
         return instance
-
 
 class TripListSerializer(serializers.ModelSerializer):
     campaign_title = serializers.CharField(source='campaign.title', read_only=True)
@@ -69,7 +67,6 @@ class TripListSerializer(serializers.ModelSerializer):
             'status', 'start_time', 'end_time', 'earnings', 'created_at'
         ]
         read_only_fields = fields
-
 
 class TripDetailSerializer(serializers.ModelSerializer):
     campaign_title = serializers.CharField(source='campaign.title', read_only=True)

@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from .models import CampaignGoal, BannerType, Template, CampaignPricingRule, CampaignPackage
 from .serializers import CampaignGoalSerializer, BannerTypeSerializer, TemplateSerializer, PricingRuleAdminSerializer,\
     CampaignPackageSerializer
-from permissions import IsAdminUser
+from utils.permissions import IsAdminUser
 
 class AdminCampaignGoalViewSet(viewsets.ModelViewSet):
     queryset = CampaignGoal.objects.all()

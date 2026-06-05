@@ -6,7 +6,7 @@ from wallets.models import models, ReferralReward
 from .models import DriverProfile, DriverDocument
 from .serializers import DriverProfileSerializer, DriverDocumentSerializer
 from rest_framework.permissions import IsAuthenticated, BasePermission
-from permissions import IsDriverOrAdmin
+from utils.permissions import IsDriverOrAdmin
 
 
 class DriverProfileViewSet(viewsets.ModelViewSet):

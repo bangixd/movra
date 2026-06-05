@@ -3,7 +3,7 @@ from .models import PrintShopProfile
 from .serializers import PrintShopProfileSerializer
 from campaigns.models import CampaignDesign
 from campaigns.serializers import CampaignDesignSerializer
-from permissions import IsOwnerOrAdmin, IsPrintShopUser
+from utils.permissions import IsOwnerOrAdmin, IsPrintShopUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status

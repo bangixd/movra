@@ -8,7 +8,7 @@ from .serializers import (
     TicketAdminSerializer,
     AppDownloadLinkSerializer,
 )
-from permissions import IsAdminUser
+from utils.permissions import IsAdminUser
 
 class AdminAppDownloadViewSet(viewsets.ModelViewSet):
     queryset = AppDownloadLink.objects.all()

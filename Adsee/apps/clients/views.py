@@ -8,7 +8,7 @@ from .models import ClientProfile, ClientDocument
 from campaigns.models import CampaignPackage, Campaign, CampaignInvoice, CampaignPricingRule
 from campaigns.serializers import CampaignPackageSerializer, ClientCampaignSerializer
 from notifications.models import Notification
-from permissions import IsClientUser, IsClientOrAdmin, IsOwnerOrAdmin
+from utils.permissions import IsClientUser, IsClientOrAdmin, IsOwnerOrAdmin
 from rest_framework.decorators import action, api_view, permission_classes
 from django.contrib.gis.geos import Point
 from services.neshan_client import NeshanClient

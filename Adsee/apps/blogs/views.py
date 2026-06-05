@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
 from .models import Post
-from permissions import IsAdminUser
+from utils.permissions import IsAdminUser
 from .serializers import PostListSerializer, PostDetailSerializer
 
 class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):

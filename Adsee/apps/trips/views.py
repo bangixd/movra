@@ -21,7 +21,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
 from campaigns.models import Campaign
 from campaigns.serializers import CampaignBriefSerializer, AvailableCampaignSerializer
-from permissions import IsDriverUser, IsClientUser
+from utils.permissions import IsDriverUser, IsClientUser
 from services.tasks import update_earnings_task, fetch_and_store_trip_analysis
 from services.analytics_client import AnalyticsServiceClient
 from geo.models import DriverLocation

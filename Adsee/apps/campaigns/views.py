@@ -28,7 +28,7 @@ from .serializers import CampaignDesignSerializer, CampaignSerializer, CampaignS
     CampaignCostCalculationSerializer, CampaignInvoiceReadSerializer, CampaignInvoiceCreateSerializer,\
     PaymentRequestSerializer, PaymentVerifySerializer, PaymentTransactionSerializer, BannerTypeSerializer,\
     CampaignGoalSerializer, CampaignPackageSerializer
-from permissions import IsClientUser, IsOwnerOrAdmin
+from utils.permissions import IsClientUser, IsOwnerOrAdmin
 from vehicles.models import VehicleType
 from mixins import SafeGetQuerysetMixin
 from .pricing import get_rule_value

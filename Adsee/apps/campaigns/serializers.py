@@ -653,6 +653,25 @@ class CampaignCostCalculationSerializer(serializers.Serializer):
     design_type = serializers.ChoiceField(choices=["READY_TEMPLATE", "UPLOADED_DESIGN", "CUSTOM_DESIGN"])
     area_type = serializers.ChoiceField(choices=["FREE", "SUGGESTED_ROUTE", "CIRCLE"])
 
+class CampaignInvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignInvoice
+        fields = [
+            'id', 'campaign',
+            'invoice_number', 'status',
+            'subtotal_price', 'discount_amount', 'tax_amount', 'total_price',
+            'expires_at', 'paid_at',
+            'snapshot',
+            'modification_type', 'modification_data',
+            'created_at'
+        ]
+        read_only_fields = [
+            'campaign', 'invoice_number', 'status',
+            'subtotal_price', 'discount_amount', 'tax_amount', 'total_price',
+            'snapshot', 'created_at',
+            'modification_type', 'modification_data'
+        ]
+
 class CampaignInvoiceReadSerializer(serializers.ModelSerializer):
     campaign_title = serializers.CharField(source='campaign.title', read_only=True)
     client_name = serializers.SerializerMethodField()

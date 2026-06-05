@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Brand, BrandCategory
 from rest_framework.decorators import action
 from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer
-from permissions import IsClientUser, IsAdminUser
+from utils.permissions import IsClientUser, IsAdminUser
 
 
 class BrandViewSet(viewsets.ModelViewSet):
