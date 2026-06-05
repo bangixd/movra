@@ -9,8 +9,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # GDAL_LIBRARY_PATH
-# GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
-# GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
+GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os.getenv("GEOS_LIBRARY_PATH")
 
 # EXTERNAL API
 ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL")
@@ -26,7 +26,12 @@ DEBUG = os.getenv("DEBUG", "False") # == "True" # Default to False if not set
 ALLOWED_HOSTS = []
 # ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
+# Trust the proxy (Nginx) to tell us the original scheme
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Only enable SSL redirect if you want Django itself to redirect;
+# with Nginx handling it, you can set to False to avoid double redirects.
+# SECURE_SSL_REDIRECT = False
 # Application definition
 
 INSTALLED_APPS = [
@@ -224,7 +229,7 @@ OTP_CODE_EXPIRY_MINUTES = os.getenv("OTP_CODE_EXPIRY_MINUTES")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
+        "LOCATION": "redis://localhost:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",

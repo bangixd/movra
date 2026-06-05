@@ -198,15 +198,6 @@ class CampaignAreaViewSet(ModelViewSet):
         )
         return Response(output.data, status=status.HTTP_201_CREATED)
 
-class CampaignPricingRuleViewSet(ModelViewSet):
-    queryset = CampaignPricingRule.objects.all().order_by("key")
-    serializer_class = CampaignPricingRuleSerializer
-    permission_classes = [IsAdminUser]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["key", "title"]
-    ordering_fields = ["key", "created_at", "updated_at"]
-    ordering = ["key"]
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsClientUser])
 def campaign_cost(request, campaign_id):

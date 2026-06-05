@@ -19,11 +19,11 @@ class MeliPayamakClient:
         payload = {
             'from': self.from_number,
             'to': to,
-            'text': message,
+            'args': [message, ],
         }
         try:
             response = requests.post(
-                f'{self.base_url}/simple/{self.key_url}',
+                f'{self.base_url}/shared/{self.key_url}',
                 json=payload,
                 timeout=10
             )

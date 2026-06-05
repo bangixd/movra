@@ -4,6 +4,23 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+RUN echo "deb https://repo.abrha.net/ubuntu jammy main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb https://repo.abrha.net/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb https://repo.abrha.net/ubuntu jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb https://repo.abrha.net/ubuntu jammy-security main restricted universe multiverse" >> /etc/apt/sources.list
+
+
+RUN echo 'Acquire::https::Verify-Peer "false";' > /etc/apt/apt.conf.d/99ignore-cert && \
+    echo 'Acquire::https::Verify-Host "false";' >> /etc/apt/apt.conf.d/99ignore-cert
+
+# حالا apt می‌تواند از HTTPS بدون مشکل دانلود کند
+RUN apt-get update && apt-get install -y ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# (اختیاری) حالا که ca-certificates نصب شد، می‌توانید فایل موقت را حذف کنید
+# تا امنیت TLS دوباره برقرار شود:
+RUN rm -f /etc/apt/apt.conf.d/99ignore-cert
+
 # نصب پیش‌نیازهای سیستم
 RUN apt-get update && apt-get install -y \
     gcc g++ libpq-dev \
@@ -13,6 +30,15 @@ RUN apt-get update && apt-get install -y \
 ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
 
 WORKDIR /app
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+
+ENV PIP_INDEX_URL=https://mirror.abrha.net/repository/pypi/simple
+ENV PIP_TRUSTED_HOST=mirror.abrha.net
+# مطمئن شدن از نصب بودن pip
+RUN python -m ensurepip --upgrade || true
+RUN python -m pip install --upgrade pip
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt

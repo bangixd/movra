@@ -2,7 +2,7 @@ from rest_framework.routers import DefaultRouter
 from django.urls import path
 from .views import CampaignDesignViewSet, CampaignViewSet, CampaignSettingViewSet,\
     CampaignAreaViewSet,CampaignPauseView, CampaignBannerImagesView, CampaignExtendView, CampaignAddVehiclesView, \
-    CampaignPricingRuleViewSet, CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView, CampaignChangeDesignView,\
+    CampaignInvoiceViewSet, PaymentRequestView, PaymentVerifyView, CampaignChangeDesignView,\
     CampaignAnalysisListView, CampaignAnalysisCSVView, BannerTypeListView, CampaignGoalListView, TemplateListView, \
     campaign_cost, CampaignPackageListView
 from .admin_views import AdminCampaignGoalViewSet, AdminBannerTypeViewSet, AdminTemplateViewSet, \
@@ -14,7 +14,6 @@ router.register(r'', CampaignViewSet, basename='campaign')
 router.register(r'campaign-setting', CampaignSettingViewSet, basename='campaign-setting')
 router.register(r'campaign-designs', CampaignDesignViewSet, basename='campaign-designs')
 router.register(r"campaign-areas", CampaignAreaViewSet, basename="campaign-area")
-router.register(r"pricing-rules", CampaignPricingRuleViewSet, basename="pricing-rules")
 router.register(r"campaign-invoices", CampaignInvoiceViewSet, basename="campaign-invoices")
 router.register(r'admin/goals', AdminCampaignGoalViewSet, basename='admin-goal')
 router.register(r'admin/banner-types', AdminBannerTypeViewSet, basename='admin-banner-type')
