@@ -169,13 +169,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        'rest_framework.authentication.SessionAuthentication', # debug mode
-        # 'rest_framework.authentication.SessionAuthentication', # debug mode
-
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
-        'rest_framework.permissions.AllowAny',
     ),
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -189,7 +185,7 @@ REST_FRAMEWORK = {
         'user': '100/minute',  #  100 درخواست در دقیقه برای کاربران لاگین
         'otp_request': '1/minute',
         'otp_verify': '1/minute',
-    }
+    },
 }
 
 
@@ -223,7 +219,23 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     # هر دامنه دیگری که فرانت‌اندت روی آن اجرا می‌شود
 ]
-
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'authorization',
+    'content-type',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 # OTP and SMS
 OTP_CODE_EXPIRY_MINUTES = os.getenv("OTP_CODE_EXPIRY_MINUTES")
 

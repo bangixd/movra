@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
-from .models import User
+from accounts.models import User
 from django.core.exceptions import ValidationError
 import re
 

@@ -19,21 +19,22 @@ class MeliPayamakClient:
         payload = {
             'from': self.from_number,
             'to': to,
-            'args': [message, ],
+            'text': message,
         }
         try:
             response = requests.post(
-                f'{self.base_url}/shared/{self.key_url}',
+                f'{self.base_url}/simple/{self.key_url}',
                 json=payload,
                 timeout=10
             )
             result = response.json()
-            if result.get('RetStatus') == 1:
+            if result.get('status') == 'عملیات موفق':
                 logger.info(f"SMS sent to {to}")
-                return True, result.get('RetStatus')
+                return True, result.get('status'), result.get('recId')
             else:
-                logger.error(f"SMS failed: {result.get('StrRetStatus')}")
-                return False, result.get('StrRetStatus')
+                logger.error(f"SMS failed: {result.get('status')}")
+                return False, result.get('status'), result.get('recId')
         except Exception as e:
             logger.error(f"SMS sending exception: {e}")
             return False, str(e)
+

@@ -29,7 +29,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/accounts/', include('accounts.urls')),
+    path('v1/', include('accounts.urls')),
 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # debug mode only اندپوینت لاگین
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # اندپوینت تمدید توکن

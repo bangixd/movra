@@ -1,44 +1,8 @@
 from rest_framework import serializers
-from .models import OTP
+from accounts.models import OTP
 from django.core.validators import RegexValidator
-
-
-# =========================
-# USER
-# =========================
 from django.contrib.auth import get_user_model
 User = get_user_model()
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = [
-            "id",
-            "phone",
-            "role",
-            "is_active",
-            "is_staff",
-            "created_at",
-        ]
-        read_only_fields = [
-            "id",
-            "phone",
-            "is_staff",
-            "created_at",
-            "is_active",
-            "role",
-        ]
-
-# =========================
-# CLIENT
-# =========================
-
-
-# =========================
-# OTP
-# =========================
-
 
 class OTPRequestSerializer(serializers.Serializer):
 
@@ -56,7 +20,6 @@ class OTPRequestSerializer(serializers.Serializer):
         )
         phone_regex(value)
         return value
-
 
 class OTPVerifySerializer(serializers.Serializer):
     identifier = serializers.CharField(max_length=11)
@@ -78,10 +41,9 @@ class OTPVerifySerializer(serializers.Serializer):
             raise serializers.ValidationError("OTP must be exactly 6 digits.")
         return value
 
-
 class OTPSerializer(serializers.ModelSerializer):
     """
-    اگر نیاز داشتید می‌توانید استفاده کنید (مثلاً در پنل ادمین).
+    ا( پنل ادمین).
     """
     used = serializers.BooleanField(read_only=True)
     used_at = serializers.DateTimeField(read_only=True)
@@ -103,9 +65,3 @@ class OTPSerializer(serializers.ModelSerializer):
             "user",
         ]
         read_only_fields = fields
-
-
-# =========================
-# Optional: serializer selector helper
-# =========================
-
