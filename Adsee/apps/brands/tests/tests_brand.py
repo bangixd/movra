@@ -19,7 +19,7 @@ class BrandManagementTest(TestCase):
         self.api.force_authenticate(user=self.client_user)
 
     def test_create_brand_pending(self):
-        response = self.api.post('/api/brands/', {
+        response = self.api.post('/v1/brands/', {
             'name': 'برند جدید',
             'slug': 'new-brand',
             'city': self.city.id,
@@ -37,7 +37,7 @@ class BrandManagementTest(TestCase):
         vehicle_type = VehicleType.objects.create(name='Sedan', base_hourly_rate=50000)
         campaign = Campaign.objects.create(client=self.client_profile, slogan='C1', brand_name=Brand.objects.get(slug='b1'), start_date=date.today(), status=Campaign.Status.ACTIVE)
         CampaignSetting.objects.create(campaign=campaign, active_days=5, activity_hours_per_day='08:00:00', max_driver=1, vehicle_type=vehicle_type)
-        response = self.api.get('/api/brands/')
+        response = self.api.get('/v1/brands/')
         self.assertEqual(response.status_code, 200)
         data = response.data[0]
         self.assertEqual(data['active_campaigns_count'], 1)
@@ -47,7 +47,7 @@ class BrandManagementTest(TestCase):
         admin = User.objects.create_superuser(phone='09990000000', password='admin')
         self.api.force_authenticate(user=admin)
         brand = Brand.objects.create(client=self.client_profile, name='B2', slug='b2', city=self.city, category=self.category, status='PENDING')
-        response = self.api.patch(f'/api/brands/{brand.id}/review/', {'status': 'APPROVED'}, format='json')
+        response = self.api.patch(f'/v1/brands/{brand.id}/review/', {'status': 'APPROVED'}, format='json')
         self.assertEqual(response.status_code, 200)
         brand.refresh_from_db()
         self.assertEqual(brand.status, 'APPROVED')

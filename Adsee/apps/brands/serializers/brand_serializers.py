@@ -1,14 +1,9 @@
 from rest_framework import serializers
-from .models import Brand, BrandCategory
+from brands.models import Brand
 from trips.models import TripAnalysis
 from campaigns.models import Campaign
 from django.db.models import Sum
 from django.utils import timezone
-
-class AdminBrandCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BrandCategory
-        fields = ['id', 'name', 'is_active']
 
 class BrandDetailSerializer(serializers.ModelSerializer):
     """جزئیات کامل یک برند"""
@@ -21,11 +16,6 @@ class BrandDetailSerializer(serializers.ModelSerializer):
         # کلاینت از کاربر لاگین‌شده پر می‌شود
         validated_data['client'] = self.context['request'].user.client_profile
         return super().create(validated_data)
-
-class BrandCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BrandCategory
-        fields = ['id', 'name']
 
 class BrandListSerializer(serializers.ModelSerializer):
     city_name = serializers.CharField(source='city.name', read_only=True)

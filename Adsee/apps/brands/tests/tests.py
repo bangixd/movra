@@ -2,8 +2,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from accounts.models import User
 from clients.models import ClientProfile
-from .models import Brand
-
+from brands.models import Brand
 
 class BrandModelTest(TestCase):
     def setUp(self):
@@ -32,7 +31,7 @@ class BrandAPITest(TestCase):
         self.api.force_authenticate(user=self.client_user)
 
     def test_create_brand(self):
-        response = self.api.post('/api/brands/', {'name': 'NewBrand', 'slug': 'new-brand'})
+        response = self.api.post('/v1/brands/', {'name': 'NewBrand', 'slug': 'new-brand'})
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Brand.objects.count(), 1)
         self.assertEqual(Brand.objects.first().client, self.client_profile)
@@ -40,6 +39,6 @@ class BrandAPITest(TestCase):
     def test_list_only_own_brands(self):
         Brand.objects.create(client=self.client_profile, name='Mine', slug='mine')
         Brand.objects.create(client=self.other_profile, name='NotMine', slug='not-mine')
-        response = self.api.get('/api/brands/')
+        response = self.api.get('/v1/brands/')
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['name'], 'Mine')

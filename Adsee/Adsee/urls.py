@@ -45,7 +45,7 @@ urlpatterns = [
     path('api/campaigns/', include('campaigns.urls')),
     path('api/geo/', include('geo.urls')),
     path('api/vehicles/', include('vehicles.urls')),
-    path('api/brands/', include('brands.urls')),
+    path('v1/brands/', include('brands.urls')),
     path('api/trips/', include('trips.urls')),
     path('api/print_shops/', include('print_shops.urls')),
     path('api/notifications/', include('notifications.urls')),

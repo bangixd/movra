@@ -1,15 +1,11 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status, permissions
-from rest_framework.permissions import IsAuthenticated
-from .models import Brand, BrandCategory
+from brands.models import Brand
 from rest_framework.decorators import action
-from .serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandCategorySerializer
+from brands.serializers import BrandListSerializer, BrandCreateUpdateSerializer
 from utils.permissions import IsClientUser, IsAdminUser
 
-
 class BrandViewSet(viewsets.ModelViewSet):
-    # permission_classes = [IsAuthenticated, IsClientUser]
-
     def get_permissions(self):
         if self.action == 'review':
             return [IsAdminUser()]
@@ -48,8 +44,3 @@ class BrandViewSet(viewsets.ModelViewSet):
         brand.status = new_status
         brand.save()
         return Response(BrandListSerializer(brand).data)
-
-class BrandCategoryListView(viewsets.ReadOnlyModelViewSet):
-    queryset = BrandCategory.objects.filter(is_active=True)
-    serializer_class = BrandCategorySerializer
-    permission_classes = [IsAuthenticated, IsClientUser]
