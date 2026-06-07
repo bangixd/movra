@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post
+from blogs.models import Post
 
 class PostListSerializer(serializers.ModelSerializer):
     """خلاصه برای لیست (بدون محتوای کامل)"""

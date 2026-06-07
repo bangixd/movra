@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
-from .models import Post
-from .serializers import PostDetailSerializer
+from blogs.models import Post
+from blogs.serializers import PostDetailSerializer
 from utils.permissions import IsAdminUser
 
 class AdminPostViewSet(viewsets.ModelViewSet):
