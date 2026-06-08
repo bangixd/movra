@@ -12,7 +12,7 @@ class ClientProfileAPITest(TestCase):
         self.other_client.save()
         self.api = APIClient()
         self.api.force_authenticate(user=self.client_user)
-        response = self.api.options('/api/clients/documents/')
+        response = self.api.options('/v1/clients/documents/')
         print(response['Allow'])  # باید POST, GET, OPTIONS, ... را نشان دهد
 
         self.profile = ClientProfile.objects.create(
@@ -25,7 +25,7 @@ class ClientProfileAPITest(TestCase):
 
     def test_get_own_profile(self):
         print("\n--- TEST: Get Own Profile ---")
-        response = self.api.get(f'/api/clients/{self.profile.id}/')
+        response = self.api.get(f'/v1/clients/{self.profile.id}/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['full_name'], 'Sara Ahmadi')
         print("✅ Own profile retrieved")
@@ -37,14 +37,14 @@ class ClientProfileAPITest(TestCase):
             advertiser_type=ClientProfile.AdvertiserType.LEGAL,
             company_name='Other Inc.',
         )
-        response = self.api.get(f'/api/clients/{other_profile.id}/')
+        response = self.api.get(f'/v1/clients/{other_profile.id}/')
         self.assertEqual(response.status_code, 403)
         print("✅ Other profile not visible")
 
     def test_create_profile(self):
         print("\n--- TEST: Create Profile ---")
         self.profile.delete()
-        response = self.api.post('/api/clients/', {
+        response = self.api.post('/v1/clients/', {
             'advertiser_type': 'REAL',
             'full_name': 'New Client',
             'national_id': '1112223330',
@@ -55,7 +55,7 @@ class ClientProfileAPITest(TestCase):
 
     def test_update_profile(self):
         print("\n--- TEST: Update Profile ---")
-        response = self.api.patch(f'/api/clients/{self.profile.id}/', {
+        response = self.api.patch(f'/v1/clients/{self.profile.id}/', {
             'full_name': 'Sara Updated',
         }, format='json')
         self.assertEqual(response.status_code, 200)
@@ -67,7 +67,7 @@ class ClientProfileAPITest(TestCase):
         print("\n--- TEST: Non-Client Cannot Create ---")
         driver_user = User.objects.create_user(phone='09120007788', role=User.Role.DRIVER)
         self.api.force_authenticate(user=driver_user)
-        response = self.api.post('/api/clients/', {
+        response = self.api.post('/v1/clients/', {
             'advertiser_type': 'REAL',
             'full_name': 'Invalid',
             'national_id': '0000000000',

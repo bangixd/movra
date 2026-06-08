@@ -2,6 +2,10 @@ from django.db import models
 from .brand_category import BrandCategory
 
 class Brand(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
     client = models.ForeignKey(
         'clients.ClientProfile',
         on_delete=models.CASCADE,
@@ -20,8 +24,8 @@ class Brand(models.Model):
     category = models.ForeignKey(BrandCategory, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(
         max_length=20,
-        choices=[('PENDING', 'در انتظار تأیید'), ('APPROVED', 'تأیید شده'), ('REJECTED', 'رد شده')],
-        default='PENDING'
+        choices=Status.choices,
+        default=Status.PENDING
     )
     whatsapp = models.CharField(max_length=20, blank=True, null=True)
     telegram = models.CharField(max_length=50, blank=True, null=True)

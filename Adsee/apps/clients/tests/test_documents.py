@@ -27,7 +27,7 @@ class ClientDocumentAPITest(TestCase):
         print("\n--- TEST: Upload Document ---")
         from django.core.files.uploadedfile import SimpleUploadedFile
         file = SimpleUploadedFile("doc.jpg", b"file_content", content_type="image/jpeg")
-        response = self.api.post('/api/clients/documents/', {
+        response = self.api.post('/v1/clients/documents/', {
             'document_type': 'NATIONAL_ID_FRONT',
             'file': file,
         }, format='multipart')
@@ -46,7 +46,7 @@ class ClientDocumentAPITest(TestCase):
         )
         # احراز هویت با ادمین
         self.api.force_authenticate(user=self.admin)
-        response = self.api.patch(f'/api/clients/documents/{doc.id}/review/', {
+        response = self.api.patch(f'/v1/clients/documents/{doc.id}/review/', {
             'status': 'APPROVED',
         }, format='json')
         self.assertEqual(response.status_code, 200)
@@ -60,7 +60,7 @@ class ClientDocumentAPITest(TestCase):
         self.api.force_authenticate(user=driver_user)
         from django.core.files.uploadedfile import SimpleUploadedFile
         file = SimpleUploadedFile("doc.jpg", b"file_content", content_type="image/jpeg")
-        response = self.api.post('/api/clients/documents/', {
+        response = self.api.post('/v1/clients/documents/', {
             'document_type': 'NATIONAL_ID',
             'file': file,
         }, format='multipart')

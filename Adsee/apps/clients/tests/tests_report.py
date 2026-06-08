@@ -33,7 +33,7 @@ class ClientReportTest(TestCase):
         TripAnalysis.objects.create(trip=trip, active_seconds=3600, distance_km=5.0, estimated_impressions=1000)
         CampaignInvoice.objects.create(campaign=self.campaign, invoice_number='INV-001', status='PAID', subtotal_price=100000, discount_amount=0, tax_amount=0, total_price=100000, expires_at=timezone.now()+timedelta(days=1), snapshot={})
 
-        response = self.api.get('/api/clients/reports/summary/')
+        response = self.api.get('/v1/clients/reports/summary/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['total_campaigns'], 1)
         self.assertEqual(response.data['total_hours_seen'], 1.0)

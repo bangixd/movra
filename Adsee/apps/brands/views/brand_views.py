@@ -1,46 +1,70 @@
-from rest_framework.response import Response
 from rest_framework import viewsets, status, permissions
-from brands.models import Brand
 from rest_framework.decorators import action
+from rest_framework.response import Response
+from brands.models import Brand
 from brands.serializers import BrandListSerializer, BrandCreateUpdateSerializer
+from brands.services.brand_service import BrandService
 from utils.permissions import IsClientUser, IsAdminUser
 
+
 class BrandViewSet(viewsets.ModelViewSet):
+    """
+    مدیریت برندها (CRUD).
+
+    ### متدهای اصلی:
+    - **GET /brands/**: لیست برندها
+      - پارامتر اختیاری Query: `status` (مقادیر: APPROVED, REJECTED, PENDING)
+      - ادمین: همهٔ برندها، کلاینت: فقط برندهای خودش
+    - **POST /brands/**: ایجاد برند جدید (وضعیت اولیه: PENDING)
+      - Body: `{"name": "برند تست", "slug": "test-brand", ...}`
+    - **GET /brands/{id}/**: جزئیات یک برند
+    - **PUT/PATCH /brands/{id}/**: ویرایش برند
+    - **DELETE /brands/{id}/**: حذف برند
+
+    ### اکشن‌های اختصاصی:
+    - **PATCH /brands/{id}/review/**: بررسی برند (فقط ادمین)
+      - Body: `{"status": "APPROVED"}` یا `{"status": "REJECTED"}`
+      - Response: اطلاعات برند به‌روزرسانی‌شده
+
+    ### محدودیت‌ها:
+    - فقط کاربران با نقش CLIENT و ادمین دسترسی دارند.
+    - بررسی برند فقط توسط ادمین.
+    """
+
     def get_permissions(self):
         if self.action == 'review':
             return [IsAdminUser()]
         return [permissions.IsAuthenticated(), IsClientUser()]
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if self.action in ['list', 'retrieve']:
             return BrandListSerializer
         return BrandCreateUpdateSerializer
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            return Brand.objects.none()
-        if user.is_staff:
-            qs = Brand.objects.all()
-        else:
-            qs = Brand.objects.filter(client__user=user)
-
         status_param = self.request.query_params.get('status')
-        if status_param:
-            qs = qs.filter(status=status_param.upper())
-        return qs
+        return BrandService.get_queryset(user, status_param)
 
     def perform_create(self, serializer):
-        serializer.save(client=self.request.user.client_profile, status='PENDING')
+        # استفاده از سرویس برای ایجاد برند
+        BrandService.create_brand(
+            user=self.request.user,
+            validated_data=serializer.validated_data
+        )
 
     @action(detail=True, methods=['patch'])
     def review(self, request, pk=None):
+        """بررسی برند توسط ادمین"""
         if not request.user.is_staff:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
         brand = self.get_object()
         new_status = request.data.get('status')
-        if new_status not in ['APPROVED', 'REJECTED']:
-            return Response({"error": "وضعیت نامعتبر"}, status=400)
-        brand.status = new_status
-        brand.save()
-        return Response(BrandListSerializer(brand).data)
+
+        try:
+            updated_brand = BrandService.review_brand(brand, new_status)
+            serializer = self.get_serializer(updated_brand)
+            return Response(serializer.data)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

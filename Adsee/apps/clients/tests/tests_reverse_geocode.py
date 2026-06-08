@@ -17,7 +17,7 @@ class ReverseGeocodeTest(TestCase):
             'address': 'تهران، خیابان ولیعصر',
             'components': {'city': 'تهران'}
         }
-        response = self.api.post('/api/clients/reverse-geocode/', {
+        response = self.api.post('/v1/clients/reverse-geocode/', {
             'lat': 35.6892,
             'lng': 51.3890
         }, format='json')
@@ -25,5 +25,5 @@ class ReverseGeocodeTest(TestCase):
         self.assertIn('address', response.data)
 
     def test_reverse_geocode_missing_params(self):
-        response = self.api.post('/api/clients/reverse-geocode/', {}, format='json')
+        response = self.api.post('/v1/clients/reverse-geocode/', {}, format='json')
         self.assertEqual(response.status_code, 400)

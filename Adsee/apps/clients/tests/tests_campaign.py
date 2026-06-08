@@ -204,7 +204,7 @@ class ClientCampaignListTest(TestCase):
     # ==============================
     def test_01_list_all_campaigns(self):
         print("\n📋 تست ۱: لیست همهٔ کمپین‌ها")
-        response = self.api.get('/api/clients/campaigns/')
+        response = self.api.get('/v1/clients/campaigns/')
         print(f"   Status: {response.status_code}")
         print(f"   Count: {len(response.data)}")
 
@@ -217,7 +217,7 @@ class ClientCampaignListTest(TestCase):
     # ==============================
     def test_02_filter_active_campaigns(self):
         print("\n🔍 تست ۲: فیلتر کمپین‌های فعال")
-        response = self.api.get('/api/clients/campaigns/?status=active')
+        response = self.api.get('/v1/clients/campaigns/?status=active')
         print(f"   Status: {response.status_code}")
         print(f"   Count: {len(response.data)}")
 
@@ -231,7 +231,7 @@ class ClientCampaignListTest(TestCase):
     # ==============================
     def test_03_filter_completed_campaigns(self):
         print("\n🔍 تست ۳: فیلتر کمپین‌های تکمیل‌شده")
-        response = self.api.get('/api/clients/campaigns/?status=completed')
+        response = self.api.get('/v1/clients/campaigns/?status=completed')
         print(f"   Status: {response.status_code}")
         print(f"   Count: {len(response.data)}")
 
@@ -245,7 +245,7 @@ class ClientCampaignListTest(TestCase):
     # ==============================
     def test_04_filter_pending_campaigns(self):
         print("\n🔍 تست ۴: فیلتر کمپین‌های در انتظار")
-        response = self.api.get('/api/clients/campaigns/?status=pending')
+        response = self.api.get('/v1/clients/campaigns/?status=pending')
         print(f"   Status: {response.status_code}")
         print(f"   Count: {len(response.data)}")
 
@@ -259,7 +259,7 @@ class ClientCampaignListTest(TestCase):
     # ==============================
     def test_05_filter_cancelled_campaigns(self):
         print("\n🔍 تست ۵: فیلتر کمپین‌های لغوشده")
-        response = self.api.get('/api/clients/campaigns/?status=cancelled')
+        response = self.api.get('/v1/clients/campaigns/?status=cancelled')
         print(f"   Status: {response.status_code}")
         print(f"   Count: {len(response.data)}")
 
@@ -273,7 +273,7 @@ class ClientCampaignListTest(TestCase):
     # ==============================
     def test_06_active_campaign_details(self):
         print("\n📊 تست ۶: جزئیات کمپین فعال با رانندگان")
-        response = self.api.get('/api/clients/campaigns/?status=active')
+        response = self.api.get('/v1/clients/campaigns/?status=active')
         print(f"   Status: {response.status_code}")
 
         self.assertEqual(response.status_code, 200)
@@ -308,7 +308,7 @@ class ClientCampaignListTest(TestCase):
         other_user = User.objects.create_user(phone='09120000000', role=User.Role.CLIENT)
         ClientProfile.objects.create(user=other_user, full_name='Other', national_id='1111111111')
         self.api.force_authenticate(user=other_user)
-        response = self.api.get('/api/clients/campaigns/')
+        response = self.api.get('/v1/clients/campaigns/')
         print(f"   Status: {response.status_code}")
         print(f"   Count: {len(response.data)}")
 
