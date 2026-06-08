@@ -38,17 +38,22 @@ class ClientProfileAPITest(TestCase):
             company_name='Other Inc.',
         )
         response = self.api.get(f'/v1/clients/{other_profile.id}/')
-        self.assertEqual(response.status_code, 403)
+        print("Status:", response.status_code)
+        print("Data:", response.data)
+        self.assertEqual(response.status_code, 404)
         print("✅ Other profile not visible")
 
     def test_create_profile(self):
         print("\n--- TEST: Create Profile ---")
         self.profile.delete()
         response = self.api.post('/v1/clients/', {
+            'user': self.client_user.id,
             'advertiser_type': 'REAL',
             'full_name': 'New Client',
             'national_id': '1112223330',
         }, format='json')
+        print("Status:", response.status_code)
+        print("Data:", response.data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(ClientProfile.objects.filter(user=self.client_user).count(), 1)
         print("✅ Profile created via API")

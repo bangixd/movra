@@ -11,7 +11,7 @@ from clients.serializers import (
     ClientLocationSerializer,
 )
 from clients.services.client_profile_service import ClientProfileService
-from utils.permissions import IsClientOrAdmin
+from utils.permissions import IsClientOrAdmin, IsOwnerOrAdmin
 
 User = get_user_model()
 
