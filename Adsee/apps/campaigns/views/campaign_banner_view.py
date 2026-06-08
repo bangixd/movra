@@ -9,7 +9,24 @@ from utils.permissions import IsClientUser
 
 class CampaignBannerImagesView(APIView):
     """
-    نمایش تصاویر بنرهای نصب‌شده رانندگان برای یک کمپین
+    نمایش تصاویر بنرهای نصب‌شدهٔ رانندگان برای یک کمپین.
+
+    ### GET /campaigns/{campaign_id}/banner-images/
+    فقط کلاینت صاحب کمپین می‌تواند ببیند.
+
+    ### نمونه پاسخ:
+    ```json
+    [
+        {
+            "driver_name": "علی رضایی",
+            "sticker_image": "https://movra.ir/media/stickers/abc.jpg",
+            "driver_car_image": "https://movra.ir/media/cars/def.jpg"
+        },
+        ...
+    ]
+    نکات:
+فقط تصاویری که sticker_image دارند برگردانده می‌شوند.
+در صورت نبود تصویر، مقدار null برگردانده می‌شود.
     """
     permission_classes = [IsAuthenticated, IsClientUser]
 

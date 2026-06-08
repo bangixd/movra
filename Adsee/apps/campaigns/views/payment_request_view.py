@@ -9,7 +9,23 @@ from utils.permissions import IsClientUser
 
 class PaymentRequestView(APIView):
     """
-    شروع فرآیند پرداخت برای یک کمپین
+    شروع فرآیند پرداخت برای یک کمپین.
+
+    ### POST /campaigns/payments/request/
+    Body:
+    ```json
+    {
+        "campaign_id": 1
+    }
+    ### نمونه پاسخ موفق
+    {
+    "payment_url": "https://sandbox.zarinpal.com/pg/StartPay/ABC123",
+    "invoice_id": 5
+    }
+    ### خطاها
+400: کمپین یافت نشد، فاکتور منقضی شده، یا فاکتور فعال وجود دارد
+
+500: خطا در اتصال به درگاه پرداخت
     """
     permission_classes = [permissions.IsAuthenticated, IsClientUser]
 

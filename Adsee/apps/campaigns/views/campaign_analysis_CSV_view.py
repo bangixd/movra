@@ -9,7 +9,19 @@ from utils.permissions import IsClientUser
 
 class CampaignAnalysisCSVView(APIView):
     """
-    خروجی CSV گزارش تحلیل سفرهای یک کمپین
+    خروجی CSV گزارش تحلیل سفرهای یک کمپین.
+
+    ### GET /campaigns/{campaign_id}/analysis/csv/
+    فقط کلاینت صاحب کمپین یا ادمین می‌تواند دانلود کند.
+
+    ### پاسخ:
+    فایل CSV با ستون‌های: شناسه سفر، نام راننده، پلاک خودرو، عنوان کمپین،
+    زمان شروع، زمان پایان، مدت فعال (ثانیه)، مسافت (کیلومتر)،
+    امتیاز نمایش، تخمین تعداد مشاهده، درآمد (تومان)
+
+    ### نکات:
+    - فقط سفرهای کامل‌شده (COMPLETED) در خروجی قرار می‌گیرند.
+    - فایل با BOM (کاراکتر \\ufeff) تولید می‌شود تا در Excel فارسی به‌هم نریزد.
     """
     permission_classes = [IsAuthenticated, IsClientUser]
 

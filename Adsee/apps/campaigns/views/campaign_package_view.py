@@ -6,9 +6,14 @@ from campaigns.serializers import CampaignPackageSerializer
 
 class CampaignPackageViewSet(ModelViewSet):
     """
-    مدیریت پکیج‌های کمپین
-    - GET: همهٔ کاربران لاگین‌شده
-    - POST/PUT/PATCH/DELETE: فقط ادمین
+    مدیریت پکیج‌های کمپین (فقط ادمین).
+
+    ### متدهای اصلی:
+    - **GET /campaigns/packages/**: لیست پکیج‌های فعال (همهٔ کاربران لاگین‌شده)
+    - **POST /campaigns/packages/**: ایجاد پکیج جدید (فقط ادمین)
+    - **GET /campaigns/packages/{id}/**: جزئیات
+    - **PUT/PATCH /campaigns/packages/{id}/**: ویرایش (فقط ادمین)
+    - **DELETE /campaigns/packages/{id}/**: حذف (فقط ادمین)
     """
     queryset = CampaignPackage.objects.filter(is_active=True)
     serializer_class = CampaignPackageSerializer
