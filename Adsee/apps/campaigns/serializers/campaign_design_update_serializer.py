@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from campaigns.models import CampaignDesign, ProductImage
-from .product_image_nested_serializer import ProductImageNestedSerializer
+from campaigns.serializers import ProductImageNestedSerializer
 
 class CampaignDesignUpdateSerializer(serializers.ModelSerializer):
     product_images = ProductImageNestedSerializer(many=True, required=False)

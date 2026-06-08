@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from campaigns.models import Campaign
 from rest_framework_gis import serializers as gis_serializers
-from .client_profile_mini_serializer import ClientProfileMiniSerializer
-from .brand_mini_serializer import BrandMiniSerializer
+from campaigns.serializers import ClientProfileMiniSerializer
+from campaigns.serializers import BrandMiniSerializer
 
 class CampaignSerializer(serializers.ModelSerializer):
     client_detail = ClientProfileMiniSerializer(source='client', read_only=True)

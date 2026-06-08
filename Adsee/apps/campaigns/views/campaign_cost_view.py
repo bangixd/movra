@@ -3,8 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from campaigns.models import Campaign
-from campaigns.services import calculate_campaign_cost
-from campaigns.services import CampaignValidationService
+from campaigns.services import calculate_campaign_cost, CampaignValidationService
 from utils.permissions import IsClientUser
 
 

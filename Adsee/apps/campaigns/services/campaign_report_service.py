@@ -1,6 +1,5 @@
 import csv
 from django.http import HttpResponse
-from campaigns.models import Campaign
 from trips.models import TripAnalysis, Trip
 
 

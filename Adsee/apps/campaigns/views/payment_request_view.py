@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from campaigns.models import Campaign
-from campaigns.services.payment_service import PaymentService
+from campaigns.services import PaymentService
 from utils.permissions import IsClientUser
 
 

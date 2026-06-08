@@ -1,6 +1,3 @@
-from campaigns.models import Campaign
-
-
 class CampaignValidationService:
     """سرویس اعتبارسنجی کمپین"""
 

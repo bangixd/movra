@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from campaigns.models import Campaign
 from trips.models import Trip
-from .driver_on_campaign_serializer import DriverOnCampaignSerializer
+from campaigns.serializers import DriverOnCampaignSerializer
 
 class ClientCampaignSerializer(serializers.ModelSerializer):
     brand_name = serializers.CharField(source='brand_name.name')

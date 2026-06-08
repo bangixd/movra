@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from campaigns.models import CampaignDesign
 from print_shops.serializers import PrintShopProfileSerializer
-from .template_serializer import TemplateSerializer
-from .product_image_serializer import ProductImageSerializer
+from campaigns.serializers import ProductImageSerializer, TemplateSerializer
 
 class CampaignDesignSerializer(serializers.ModelSerializer):
     print_shop_detail = PrintShopProfileSerializer(source='print_shop', read_only=True)

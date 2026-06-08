@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions
 from trips.serializers import TripAnalysisSerializer
-from campaigns.services.campaign_report_service import CampaignReportService
+from campaigns.services import CampaignReportService
 
 
 class CampaignAnalysisListView(generics.ListAPIView):

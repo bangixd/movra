@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from campaigns.models import PaymentTransaction
-from campaigns.services.payment_service import PaymentService
+from campaigns.services import PaymentService
 
 
 class PaymentVerifyView(APIView):

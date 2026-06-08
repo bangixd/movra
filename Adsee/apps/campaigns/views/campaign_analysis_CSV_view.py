@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from campaigns.models import Campaign
-from campaigns.services.campaign_report_service import CampaignReportService
+from campaigns.services import CampaignReportService
 from utils.permissions import IsClientUser
 
 

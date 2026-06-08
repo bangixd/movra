@@ -10,17 +10,3 @@ from .campaign_cost_view import campaign_cost
 from .campaign_view import CampaignViewSet
 from .payment_request_view import PaymentRequestView
 from .payment_verify_view import PaymentVerifyView
-
-#from .campaign_design_view import CampaignDesignViewSet
-#from .campaign_setting_view import CampaignSettingViewSet
-#from .campaign_area_view import CampaignAreaViewSet
-#from .campaign_invoice_view import CampaignInvoiceViewSet
-
-#from .template_view import TemplateListView
-#from .campaign_goal_view import CampaignGoalListView
-# from .campaign_package_list_view import CampaignPackageListView
-
-#from .campaign_extend_view import CampaignExtendView
-#from .campaign_pause_view import CampaignPauseView
-#from .campaign_change_design_view import CampaignChangeDesignView
-#from .campaign_add_vehicles_view import CampaignAddVehiclesView
