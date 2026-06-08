@@ -18,7 +18,6 @@ from .client_profile_mini_serializer import ClientProfileMiniSerializer
 from .campaign_serializer import CampaignSerializer
 #client
 from .driver_on_campaign_serializer import DriverOnCampaignSerializer
-from .client_campaign_serializer import ClientCampaignSerializer
 #trip
 from .campaign_brief_serializer import CampaignBriefSerializer
 from .available_campaign_serializer import AvailableCampaignSerializer

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from brands.views import BrandCategoryListView
-from .routers import router
+from .router import router
 
 urlpatterns = [
     path('', include(router.urls)),

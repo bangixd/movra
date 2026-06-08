@@ -3,7 +3,7 @@ from .views import CampaignBannerImagesView, \
     PaymentRequestView, PaymentVerifyView, \
     CampaignAnalysisListView, CampaignAnalysisCSVView, \
     campaign_cost
-from .routers import router
+from .router import router
 
 urlpatterns = router.urls + [
     path('payments/request/', PaymentRequestView.as_view(), name='payment-request'),

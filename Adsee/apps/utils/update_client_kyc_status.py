@@ -1,4 +1,4 @@
-from .models import ClientProfile, ClientDocument
+from clients.models import ClientProfile, ClientDocument
 
 def update_kyc_status(user):
     """

@@ -1,14 +1,6 @@
+from clients.models import ClientProfile
 from rest_framework import serializers
-from django.core.validators import RegexValidator
-from .models import ClientProfile, ClientDocument
-from rest_framework import serializers
-from rest_framework_gis import serializers as gis_serializers
 from campaigns.models import Campaign
-
-
-class ClientLocationSerializer(serializers.Serializer):
-    lat = serializers.FloatField(required=True)
-    lng = serializers.FloatField(required=True)
 
 class ClientProfileSerializer(serializers.ModelSerializer):
     wallet_balance = serializers.DecimalField(source='user.wallet.balance', max_digits=12, decimal_places=2, read_only=True)
@@ -24,9 +16,3 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             brand_name__client=obj,
             status__in=[Campaign.Status.ACTIVE, Campaign.Status.PAUSED]
         ).count()
-
-class ClientDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ClientDocument
-        fields = ['id', 'user', 'document_type', 'file', 'status', 'submitted_at', 'reviewed_at', 'reject_reason']
-        read_only_fields = ['user', 'status', 'submitted_at', 'reviewed_at', 'reject_reason']

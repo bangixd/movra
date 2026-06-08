@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import ClientDocument
 from services.tasks import process_client_document
-from .utils import update_kyc_status
+from utils.update_client_kyc_status import update_kyc_status
 
 @receiver(post_save, sender=ClientDocument)
 def trigger_client_document_processing(sender, instance, created, **kwargs):

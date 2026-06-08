@@ -23,6 +23,55 @@ from campaigns.models import CampaignDesign, CampaignArea, CampaignSetting, Camp
 
 
 class CampaignViewSet(ModelViewSet):
+    """
+    مدیریت کمپین‌ها (CRUD).
+
+    ### متدهای اصلی:
+    - **GET /campaigns/**: لیست کمپین‌ها (ادمین: همه، کلاینت: فقط کمپین‌های خودش)
+    - **POST /campaigns/**: ایجاد کمپین جدید
+      - Body: `{"slogan": "...", "brand_name": 1, "start_date": "...", "end_date": "...", ...}`
+    - **GET /campaigns/{id}/**: جزئیات یک کمپین
+    - **PUT/PATCH /campaigns/{id}/**: ویرایش کمپین
+    - **DELETE /campaigns/{id}/**: حذف منطقی کمپین (is_deleted=True)
+
+    ### عملیات‌های خاص کمپین:
+    - **POST /campaigns/{id}/add-vehicles/**: افزایش تعداد خودرو
+      - Body: `{"count": 3}`
+      - Response: `{"payment_url": "...", "invoice_id": 1, "extra_amount": 150000, "total": 163500}`
+
+    - **POST /campaigns/{id}/extend/**: تمدید مدت کمپین
+      - Body: `{"days": 5}`
+      - Response: `{"payment_url": "...", "invoice_id": 2, "extra_amount": 500000, "total": 545000}`
+
+    - **POST /campaigns/{id}/change-design/**: تغییر طراحی (بنر)
+      - Body: `{"design_type": "CUSTOM_DESIGN", ...}`
+      - Response: `{"payment_url": "...", "invoice_id": 3, "extra_amount": 150000, "total": 163500}`
+      - اگر مابه‌التفاوت صفر باشد: `{"message": "تغییرات با موفقیت اعمال شد", "paid": false}`
+
+    - **POST /campaigns/{id}/pause/**: توقف یا ادامهٔ کمپین (Toggle)
+      - Response: `{"status": "PAUSED"}` یا `{"status": "ACTIVE"}`
+
+    ### مدیریت طراحی:
+    - **GET /campaigns/{id}/design/**: دریافت طراحی فعلی کمپین
+    - **PUT/PATCH /campaigns/{id}/design/**: ایجاد یا ویرایش طراحی
+
+    ### مدیریت محدوده:
+    - **GET /campaigns/{id}/area/**: دریافت محدودهٔ جغرافیایی
+    - **PUT/PATCH /campaigns/{id}/area/**: ایجاد یا ویرایش محدوده
+
+    ### مدیریت تنظیمات:
+    - **GET /campaigns/{id}/setting/**: دریافت تنظیمات کمپین
+    - **PUT/PATCH /campaigns/{id}/setting/**: ایجاد یا ویرایش تنظیمات
+
+    ### مدیریت فاکتور:
+    - **GET /campaigns/{id}/invoice/**: دریافت فاکتور کمپین
+    - **POST /campaigns/{id}/invoice/pay/**: شروع فرآیند پرداخت
+      - Response: `{"payment_url": "...", "invoice_id": 5}`
+
+    ### محدودیت‌ها:
+    - فقط کاربران با نقش CLIENT و ادمین دسترسی دارند.
+    - هر کلاینت فقط کمپین‌های خود را می‌تواند مدیریت کند.
+    """
     permission_classes = [IsClientUser,]
     serializer_class = CampaignSerializer
 

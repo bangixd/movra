@@ -1,12 +1,9 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import ClientProfileViewSet, ClientDocumentViewSet, reverse_geocode,\
-    ClientPeakHoursView, ClientReportSummaryView, BillboardComparisonView, ClientCampaignListView
-
-router = DefaultRouter()
-router.register(r'documents', ClientDocumentViewSet, basename='client-document')
-router.register(r'', ClientProfileViewSet, basename='client-profile')
+from clients.views import reverse_geocode,\
+    ClientPeakHoursView, ClientReportSummaryView, BillboardComparisonView, ClientCampaignListView, ClientHomeView
+from .router import router
 urlpatterns =[
+    path('home/', ClientHomeView.as_view(), name='client-home'),
     path('campaigns/', ClientCampaignListView.as_view(), name='client-campaign-list'),
     path('reports/summary/', ClientReportSummaryView.as_view(), name='report-summary'),
     path('reports/peak-hours/', ClientPeakHoursView.as_view(), name='report-peak-hours'),

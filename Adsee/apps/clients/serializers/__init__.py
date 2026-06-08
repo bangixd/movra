@@ -1,0 +1,4 @@
+from .client_document_serializer import ClientDocumentSerializer
+from .client_location_serializer import ClientLocationSerializer
+from .client_profile_serializer import ClientProfileSerializer
+from .client_campaign_serializer import ClientCampaignSerializer
