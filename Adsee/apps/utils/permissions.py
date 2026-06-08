@@ -49,7 +49,7 @@ class IsDriverOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return request.user.is_staff or getattr(request.user, 'role', None) == 'DRIVER'
+        return request.user.is_staff or request.user.role == 'DRIVER'
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """

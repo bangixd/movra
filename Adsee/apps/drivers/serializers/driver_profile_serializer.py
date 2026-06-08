@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import DriverProfile, DriverDocument
-from geo.models import City
+from drivers.models import DriverProfile
+from trips.models import Trip
 
 class DriverProfileSerializer(serializers.ModelSerializer):
     city_name = serializers.CharField(source='city.name', read_only=True)
@@ -30,7 +30,6 @@ class DriverProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'kyc_status', 'registration_step', 'is_contract_accepted', 'created_at', 'updated_at']
 
     def get_active_campaigns(self, obj):
-        from trips.models import Trip
         active_trips = Trip.objects.filter(
             driver=obj,
             status=Trip.Status.ACTIVE
@@ -66,9 +65,3 @@ class DriverProfileSerializer(serializers.ModelSerializer):
                 instance.registration_step = DriverProfile.RegistrationStep.DOCUMENTS
                 instance.save(update_fields=['registration_step'])
         return instance
-
-class DriverDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DriverDocument
-        fields = ['id', 'user', 'document_type', 'file', 'status', 'submitted_at', 'reviewed_at', 'reject_reason']
-        read_only_fields = ['user', 'status', 'submitted_at', 'reviewed_at', 'reject_reason']

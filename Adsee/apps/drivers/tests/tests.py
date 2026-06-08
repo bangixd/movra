@@ -22,10 +22,11 @@ class DriverRegistrationFlowTest(TestCase):
         # فرض می‌کنیم با اولین PATCH ساخته می‌شود یا از قبل سیگنال داریم.
         # برای تست، پروفایل را دستی می‌سازیم
         self.profile = DriverProfile.objects.create(user=self.driver_user, registration_step=1)
+        print(f"Driver role: {self.driver_user.role}")  # ← add this
 
     def test_step1_submit_personal_info(self):
         """مرحله ۱: تکمیل اطلاعات شخصی"""
-        response = self.client.patch(f'/api/drivers/profile/{self.profile.id}/', {
+        response = self.client.patch(f'/v1/drivers/profile/{self.profile.id}/', {
             'full_name': 'رضایی علی',
             'national_id': '1234567890',
             'birth_date': '1990-01-01',
@@ -43,10 +44,13 @@ class DriverRegistrationFlowTest(TestCase):
 
         from django.core.files.uploadedfile import SimpleUploadedFile
         file = SimpleUploadedFile("doc.jpg", b"file_content", content_type="image/jpeg")
-        response = self.client.post('/api/drivers/documents/', {
+        response = self.client.post('/v1/drivers/documents/', {
             'document_type': 'DRIVING_LICENSE',
             'file': file
         }, format='multipart')
+        print(f"Status step2 upload documents: {response.status_code}")
+        print(f"Data: {response.data}")
+        print(f"Allowed methods: {response.headers.get('Allow')}")
         self.assertEqual(response.status_code, 201)
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.registration_step, 3)
@@ -65,7 +69,7 @@ class DriverRegistrationFlowTest(TestCase):
 
         # ادمین وارد شود
         self.client.force_authenticate(user=self.admin)
-        response = self.client.patch(f'/api/drivers/documents/{doc.id}/review/', {
+        response = self.client.patch(f'/v1/drivers/documents/{doc.id}/review/', {
             'status': 'APPROVED'
         }, format='json')
         self.assertEqual(response.status_code, 200)
@@ -80,7 +84,7 @@ class DriverRegistrationFlowTest(TestCase):
         self.profile.save()
 
         self.client.force_authenticate(user=self.driver_user)
-        response = self.client.patch('/api/drivers/profile/accept_contract/')
+        response = self.client.patch('/v1/drivers/profile/accept_contract/')
         self.assertEqual(response.status_code, 200)
         self.profile.refresh_from_db()
         self.assertTrue(self.profile.is_contract_accepted)

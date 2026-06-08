@@ -1,10 +1,7 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import (DriverProfileViewSet, DriverDocumentViewSet, apply_referral_code)
+from .views import apply_referral_code
+from .router import router
 
-router = DefaultRouter()
-router.register(r'profiles', DriverProfileViewSet, basename='driver-profile')
-router.register(r'documents', DriverDocumentViewSet, basename='driver-document')
-urlpatterns = router.urls +  [
+urlpatterns =  [
     path('apply-referral/', apply_referral_code, name='apply-referral'),
-]
+] + router.urls
