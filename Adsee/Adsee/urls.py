@@ -42,7 +42,7 @@ urlpatterns = [
 
     path('api/drivers/', include('drivers.urls')),
     path('api/clients/', include('clients.urls')),
-    path('api/campaigns/', include('campaigns.urls')),
+    path('v1/campaigns/', include('campaigns.urls')),
     path('api/geo/', include('geo.urls')),
     path('api/vehicles/', include('vehicles.urls')),
     path('v1/brands/', include('brands.urls')),
