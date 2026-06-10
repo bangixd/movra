@@ -35,6 +35,16 @@ class IsPrintShopUser(permissions.BasePermission):
                 getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
         )
 
+class IsPrintShopOrAdmin(permissions.BasePermission):
+    """
+    دسترسی برای کاربران ادمین یا کاربرانی که نقش PrintShop دارند.
+    """
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        # ادمین باشد یا نقش CLIENT داشته باشد
+        return request.user.is_staff or request.user.role == User.Role.PRINT_SHOP
+
 class IsClientOrAdmin(permissions.BasePermission):
     """
     دسترسی برای کاربران ادمین یا کاربرانی که نقش CLIENT دارند.

@@ -61,7 +61,7 @@ class PrintShopAPITest(TestCase):
         )
 
     def test_create_printshop_profile(self):
-        response = self.print_api.post('/api/print_shops/profile/', {
+        response = self.print_api.post('/v1/print_shops/profile/', {
             'shop_name': 'چاپخانه جدید',
             'address': 'مشهد',
             'phone': '05112345678',
@@ -71,7 +71,7 @@ class PrintShopAPITest(TestCase):
         self.assertEqual(PrintShopProfile.objects.count(), 1)
 
     def test_non_printshop_cannot_create_profile(self):
-        response = self.driver_api.post('/api/print_shops/profile/', {
+        response = self.driver_api.post('/v1/print_shops/profile/', {
             'shop_name': 'چاپخانه متفرقه',
             'address': 'اینجا',
             'phone': '09120000000'
@@ -84,7 +84,7 @@ class PrintShopAPITest(TestCase):
         self.design.print_shop = shop
         self.design.save()
 
-        response = self.print_api.get('/api/print_shops/designs/')
+        response = self.print_api.get('/v1/print_shops/designs/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], self.design.id)
@@ -95,7 +95,7 @@ class PrintShopAPITest(TestCase):
         self.design.save()
 
         # چاپخانه وضعیت را تغییر دهد
-        response = self.print_api.patch(f'/api/print_shops/designs/{self.design.id}/status/', {
+        response = self.print_api.patch(f'/v1/print_shops/designs/{self.design.id}/status/', {
             'print_status': 'ACCEPTED',
             'estimated_ready_date': '2026-05-25T10:00:00Z'
         }, format='json')

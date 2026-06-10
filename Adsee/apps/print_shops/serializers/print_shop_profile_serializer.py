@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PrintShopProfile
+from print_shops.models import PrintShopProfile
 
 class PrintShopProfileSerializer(serializers.ModelSerializer):
     class Meta:

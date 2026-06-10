@@ -1,0 +1,1 @@
+from .print_shop_profile_model import PrintShopProfile
