@@ -50,7 +50,7 @@ urlpatterns = [
     path('v1/print_shops/', include('print_shops.urls')),
     path('v1/notifications/', include('notifications.urls')),
     path('api/wallets/', include('wallets.urls')),
-    path('api/support/', include('support.urls')),
+    path('v1/support/', include('support.urls')),
     path('v1/blogs/', include('blogs.urls')),
 
 

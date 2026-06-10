@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 from accounts.models import User
-from .models import Ticket
+from support.models import Ticket
 
 class TicketAPITest(TestCase):
     def setUp(self):
@@ -10,7 +10,7 @@ class TicketAPITest(TestCase):
         self.client.force_authenticate(user=self.driver)
 
     def test_create_ticket(self):
-        response = self.client.post('/api/support/tickets/', {
+        response = self.client.post('/v1/support/tickets/', {
             'subject': 'مشکل در ثبت‌نام',
             'name': 'علی رضایی',
             'phone': '09120001122',
@@ -21,6 +21,6 @@ class TicketAPITest(TestCase):
 
     def test_list_tickets(self):
         Ticket.objects.create(user=self.driver, subject='تست', name='علی', phone='09120001122', message='...')
-        response = self.client.get('/api/support/tickets/list/')
+        response = self.client.get('/v1/support/tickets/mine/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)

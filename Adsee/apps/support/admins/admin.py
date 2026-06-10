@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SiteSetting, Ticket, FAQCategory, FAQItem
+from support.models import SiteSetting, Ticket, FAQCategory, FAQItem
 
 
 @admin.register(SiteSetting)
