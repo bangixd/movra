@@ -84,12 +84,12 @@ class NotificationAPITest(TestCase):
         self.api.force_authenticate(user=self.driver)
 
     def test_list_notifications(self):
-        response = self.api.get('/api/notifications/')
+        response = self.api.get('/v1/notifications/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 
     def test_mark_notification_read(self):
-        response = self.api.post(f'/api/notifications/{self.notification.id}/read/')
+        response = self.api.post(f'/v1/notifications/{self.notification.id}/read/')
         # اول مطمئن شو که درخواست موفق بوده
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # حالا شیء را از نو بخوان
@@ -98,5 +98,5 @@ class NotificationAPITest(TestCase):
 
     def test_mark_all_read(self):
         Notification.objects.create(recipient=self.driver, notification_type=Notification.Type.NEW_DESIGN, message='hi')
-        response = self.api.post('/api/notifications/read_all/')
+        response = self.api.post('/v1/notifications/read_all/')
         self.assertEqual(Notification.objects.filter(recipient=self.driver, is_read=True).count(), 2)
