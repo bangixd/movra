@@ -44,7 +44,7 @@ class BatchLocationTest(TestCase):
 
     def test_batch_upload_success(self):
         print("\n--- TEST: Batch Upload Success ---")
-        response = self.api.post('/api/geo/driver-locations/batch/', {
+        response = self.api.post('/v1/geo/driver-locations/batch/', {
             'trip_id': self.trip.id,
             'points': [
                 {'lat': 35.70, 'lon': 51.39, 'timestamp': 1715172000, 'speed': 40, 'heading': 90},
@@ -60,7 +60,7 @@ class BatchLocationTest(TestCase):
 
     def test_batch_locations_have_source_batch(self):
         print("\n--- TEST: Batch Locations Have source='batch' ---")
-        self.api.post('/api/geo/driver-locations/batch/', {
+        self.api.post('/v1/geo/driver-locations/batch/', {
             'trip_id': self.trip.id,
             'points': [{'lat': 35.70, 'lon': 51.39, 'timestamp': 1715172000}]
         }, format='json')
@@ -83,10 +83,10 @@ class BatchLocationTest(TestCase):
         # پایان سفر
         self.trip.status = Trip.Status.COMPLETED
         self.trip.save()
-        response = self.api.post('/api/geo/driver-locations/batch/', {
+        response = self.api.post('/v1/geo/driver-locations/batch/', {
             'trip_id': self.trip.id,
             'points': [{'lat': 35.70, 'lon': 51.39, 'timestamp': 1715172000}]
         }, format='json')
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Trip is not active", response.data['error'])
+        self.assertIn("سفر فعال نیست", response.data['error'])
         print("✅ Non-active trip rejected")

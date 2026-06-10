@@ -1,0 +1,5 @@
+from .geo_province_view import ProvinceViewSet
+from .geo_city_view import CityViewSet
+from .geo_suggested_route_view import SuggestedRouteViewSet
+from .geo_neighborhood_view import NeighborhoodViewSet
+from .geo_driver_location_view import DriverLocationViewSet

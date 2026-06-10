@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.contrib.gis.geos import Point, LineString
 from accounts.models import User
-from .models import Province, City, Neighborhood, SuggestedRoute, DriverLocation
+from geo.models import Province, City, Neighborhood, SuggestedRoute, DriverLocation
 from trips.models import Trip  # برای ارتباط DriverLocation با Trip
 
 
@@ -29,7 +29,7 @@ class GeoAPITest(TestCase):
 
     def test_non_admin_cannot_create_city(self):
         self.api.force_authenticate(user=self.driver)
-        response = self.api.post('/api/geo/cities/', {
+        response = self.api.post('/v1/geo/cities/', {
             'name': 'Shiraz',
             'province': None,
             'center': 'POINT(51.38 35.68)'
@@ -39,7 +39,7 @@ class GeoAPITest(TestCase):
     def test_admin_can_create_city(self):
         self.api.force_authenticate(user=self.admin)
         province = Province.objects.create(name='Fars')
-        response = self.api.post('/api/geo/cities/', {
+        response = self.api.post('/v1/geo/cities/', {
             'name': 'Shiraz',
             'province': province.id,
             'center': 'POINT(52.53 29.61)'
@@ -50,6 +50,6 @@ class GeoAPITest(TestCase):
         self.api.force_authenticate(user=self.driver)
         province = Province.objects.create(name='Esfahan')
         City.objects.create(name='Esfahan', province=province, center=Point(51.67, 32.65, srid=4326))
-        response = self.api.get('/api/geo/cities/')
+        response = self.api.get('/v1/geo/cities/')
         self.assertEqual(response.status_code, 200)
         self.assertGreater(len(response.data), 0)
