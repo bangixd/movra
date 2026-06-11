@@ -31,10 +31,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('v1/', include('accounts.urls')),
 
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # debug mode only اندپوینت لاگین
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # اندپوینت تمدید توکن
-    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    path('api/logout/', TokenBlacklistView.as_view(), name='token_blacklist'),  # این URL برای لاگ اوت
+    path('v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # debug mode only اندپوینت لاگین
+    path('v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # اندپوینت تمدید توکن
+    path('v1/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('v1/logout/', TokenBlacklistView.as_view(), name='token_blacklist'),  # این URL برای لاگ اوت
 
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from wallets.services.wallet_service import WalletService
 from wallets.models import Wallet
+from wallets.serializers import WalletSerializer
+
 
 
 class WalletViewSet(viewsets.GenericViewSet):
@@ -14,6 +16,7 @@ class WalletViewSet(viewsets.GenericViewSet):
     - **GET /wallet/transactions/**: لیست تراکنش‌ها
     """
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = WalletSerializer
 
     def get_queryset(self):
         # همچنان برای استفاده‌های داخلی (مثل router) لازم است

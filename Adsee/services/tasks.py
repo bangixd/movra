@@ -13,6 +13,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def process_driver_document(self, document_id):
     from drivers.models import DriverDocument
@@ -215,6 +216,7 @@ def fetch_and_store_trip_analysis(self, trip_id):
                 )
     # اگر buckets وجود نداشت، هیچ کاری نمی‌کنیم (گزارش peak hours از همان روش تقریبی قبلی استفاده می‌کند)
 
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=10)
 def send_otp_sms_task(self, phone, code):
     client = MeliPayamakClient()
@@ -222,6 +224,7 @@ def send_otp_sms_task(self, phone, code):
     success, status = client.send_sms(phone, message)
     if not success:
         raise self.retry(exc=Exception(f"SMS failed: {status}"))
+
 
 @shared_task
 def expire_pending_invoices():
