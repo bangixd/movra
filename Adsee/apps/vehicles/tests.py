@@ -33,7 +33,7 @@ class VehicleAPITest(TestCase):
         self.api.force_authenticate(user=self.driver_user)
 
     def test_create_vehicle(self):
-        response = self.api.post('/api/vehicles/', {
+        response = self.api.post('/v1/vehicles/', {
             'vehicle_type': self.vehicle_type.id,
             'plate_number': '11B222C33',
             'banner_max_width_cm': 200,
@@ -48,6 +48,6 @@ class VehicleAPITest(TestCase):
         other_profile = DriverProfile.objects.create(user=other_driver, full_name='Hossein', national_id='9999999999')
         Vehicle.objects.create(driver=self.driver_profile, vehicle_type=self.vehicle_type, plate_number='X', banner_max_width_cm=100, banner_max_height_cm=50)
         Vehicle.objects.create(driver=other_profile, vehicle_type=self.vehicle_type, plate_number='Y', banner_max_width_cm=100, banner_max_height_cm=50)
-        response = self.api.get('/api/vehicles/')
+        response = self.api.get('/v1/vehicles/')
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['plate_number'], 'X')
