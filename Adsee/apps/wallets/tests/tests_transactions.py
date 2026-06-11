@@ -47,19 +47,19 @@ class WalletAPITest(TestCase):
         self.api.force_authenticate(user=self.driver_user)
 
     def test_wallet_summary(self):
-        response = self.api.get('/api/wallets/summary/')
+        response = self.api.get('/v1/wallets/summary/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['total_earnings'], '125000.00')
         self.assertEqual(response.data['balance'], '125000.00')
 
     def test_transaction_list(self):
-        response = self.api.get('/api/wallets/transactions/')
+        response = self.api.get('/v1/wallets/transactions/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['amount'], '125000.00')
 
     def test_bank_account_creation(self):
-        response = self.api.post('/api/wallets/bank/', {
+        response = self.api.post('/v1/wallets/bank/', {
             'card_number': '6037997512345678',
             'sheba_number': 'IR123456789012345678901234',
             'bank_name': 'ملی'

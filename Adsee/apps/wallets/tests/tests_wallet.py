@@ -13,7 +13,7 @@ class ClientWalletTest(TestCase):
         self.api.force_authenticate(user=self.client_user)
 
     def test_deposit(self):
-        response = self.api.post('/api/wallets/deposit/', {'amount': 100000}, format='json')
+        response = self.api.post('/v1/wallets/deposit/', {'amount': 100000}, format='json')
         self.assertEqual(response.status_code, 200)
         self.wallet.refresh_from_db()
         self.assertEqual(self.wallet.balance, 100000)
@@ -31,7 +31,7 @@ class ClientWalletTest(TestCase):
         self.wallet.save()
         self.client_user = User.objects.get(pk=self.client_user.pk)
         self.api.force_authenticate(user=self.client_user)
-        response = self.api.post('/api/wallets/withdraw/', {'amount': 30000}, format='json')
+        response = self.api.post('/v1/wallets/withdraw/', {'amount': 30000}, format='json')
         self.assertEqual(response.status_code, 200)
         self.wallet.refresh_from_db()
         self.assertEqual(self.wallet.balance, 20000)

@@ -84,7 +84,7 @@ class ReferralRewardTest(TestCase):
         )
 
         self.client.force_authenticate(user=fresh_user)
-        response = self.client.post('/api/drivers/apply-referral/', {
+        response = self.client.post('/v1/drivers/apply-referral/', {
             'referral_code': 'ABCD1234'
         }, format='json')
         self.assertEqual(response.status_code, 200)
