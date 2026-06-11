@@ -11,7 +11,6 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
             "city",
             "neighborhood",
             "center_point",
-            "radius_meter",
             "suggested_route",
             "region_polygon",
         ]
@@ -29,7 +28,6 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
         city = attrs.get("city", getattr(instance, "city", None))
         neighborhood = attrs.get("neighborhood", getattr(instance, "neighborhood", None))
         center_point = attrs.get("center_point", getattr(instance, "center_point", None))
-        radius_meter = attrs.get("radius_meter", getattr(instance, "radius_meter", None))
         suggested_route = attrs.get("suggested_route", getattr(instance, "suggested_route", None))
         region_polygon = attrs.get("region_polygon", getattr(instance, "region_polygon", None))
         campaign = attrs.get("campaign", getattr(instance, "campaign", None))
@@ -58,10 +56,6 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
                 errors["neighborhood"] = "This field is required for CIRCLE."
             if not center_point:
                 errors["center_point"] = "This field is required for CIRCLE."
-            if not radius_meter:
-                errors["radius_meter"] = "This field is required for CIRCLE."
-            elif radius_meter <= 0:
-                errors["radius_meter"] = "radius_meter must be greater than 0."
 
             if suggested_route:
                 errors["suggested_route"] = "This field must not be set for CIRCLE."
@@ -83,8 +77,7 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
 
             if center_point:
                 errors["center_point"] = "This field must not be set for SUGGESTED_ROUTE."
-            if radius_meter:
-                errors["radius_meter"] = "This field must not be set for SUGGESTED_ROUTE."
+
             if region_polygon:
                 errors["region_polygon"] = "This field must not be set for SUGGESTED_ROUTE."
 
@@ -110,8 +103,6 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
                 errors["neighborhood"] = "This field must not be set for FREE_AREA."
             if center_point:
                 errors["center_point"] = "This field must not be set for FREE_AREA."
-            if radius_meter:
-                errors["radius_meter"] = "This field must not be set for FREE_AREA."
             if suggested_route:
                 errors["suggested_route"] = "This field must not be set for FREE_AREA."
 

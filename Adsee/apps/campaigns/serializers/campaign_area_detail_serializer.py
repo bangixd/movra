@@ -20,7 +20,6 @@ class CampaignAreaDetailSerializer(serializers.ModelSerializer):
             "city",
             "neighborhood",
             "center_point",
-            "radius_meter",
             "suggested_route",
             "region_polygon",
             "targeting_geometry",
