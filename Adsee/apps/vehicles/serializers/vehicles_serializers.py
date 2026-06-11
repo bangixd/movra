@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VehicleType, Vehicle
+from vehicles.models import VehicleType, Vehicle
 
 
 # ---- VehicleType ----

@@ -1,0 +1,2 @@
+from .vehicle_views import VehicleViewSet
+from .vehicle_type_view import VehicleTypeViewSet

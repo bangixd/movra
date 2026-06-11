@@ -1,0 +1,1 @@
+from .vehicles_serializers import VehicleDetailSerializer, VehicleListSerializer, VehicleTypeSerializer

@@ -44,7 +44,7 @@ urlpatterns = [
     path('v1/clients/', include('clients.urls')),
     path('v1/campaigns/', include('campaigns.urls')),
     path('v1/geo/', include('geo.urls')),
-    path('api/vehicles/', include('vehicles.urls')),
+    path('v1/vehicles/', include('vehicles.urls')),
     path('v1/brands/', include('brands.urls')),
     path('v1/trips/', include('trips.urls')),
     path('v1/print_shops/', include('print_shops.urls')),
