@@ -42,17 +42,28 @@ class DriverLocationService:
         Returns:
             DriverLocation ایجاد شده
         """
-        point = point_data['point']
-        lon = point['coordinates'][0]
-        lat = point['coordinates'][1]
+        # اگر point_data خودش حاوی Point باشد
+        point_obj = point_data.get('point')
+        if point_obj is None:
+            # شاید کلید دیگری دارد (مثلاً 'location')
+            point_obj = point_data.get('location')
+        if point_obj is None:
+            raise ValueError("Invalid point data")
 
-        # یافتن سفر فعال
+        # اگر point_obj یک dict (GeoJSON)
+        if isinstance(point_obj, dict):
+            coords = point_obj['coordinates']
+            lon, lat = coords[0], coords[1]
+            geom_point = Point(lon, lat, srid=4326)
+        else:
+            # احتمالاً یک شیء Point از قبل
+            geom_point = point_obj
+
         active_trip = DriverLocationService.get_active_trip(user.driver_profile)
-
         location = DriverLocation.objects.create(
             driver=user,
             trip=active_trip,
-            point=Point(lon, lat, srid=4326),
+            point=geom_point,
             source='realtime'
         )
         return location

@@ -1,6 +1,7 @@
 from django.db import models
 from .brand_category import BrandCategory
 
+
 class Brand(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'

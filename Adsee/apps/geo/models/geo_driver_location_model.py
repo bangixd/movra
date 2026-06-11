@@ -8,10 +8,8 @@ class DriverLocation(geomodels.Model):
         on_delete=models.CASCADE,
         related_name='locations'
     )
-    # توجه: این فیلد به مدل Trip در اپ campaign اشاره می‌کند.
-    # اگر هنوز مدل Trip را نساخته‌اید، می‌توانید این خط را فعلاً کامنت کنید.
     trip = geomodels.ForeignKey(
-        'trips.Trip',            # بعداً ساخته می‌شود
+        'trips.Trip',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

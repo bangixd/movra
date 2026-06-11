@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from brands.models import Brand
-from brands.serializers import BrandListSerializer, BrandCreateUpdateSerializer
+from brands.serializers import BrandListSerializer, BrandCreateUpdateSerializer, BrandDetailSerializer
 from brands.services.brand_service import BrandService
 from utils.permissions import IsClientUser, IsAdminUser
 
@@ -37,8 +37,10 @@ class BrandViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated(), IsClientUser()]
 
     def get_serializer_class(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action == 'list':
             return BrandListSerializer
+        if self.action == 'retrieve':
+            return BrandDetailSerializer  # یا هر نامی که دارد
         return BrandCreateUpdateSerializer
 
     def get_queryset(self):
@@ -48,10 +50,11 @@ class BrandViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         # استفاده از سرویس برای ایجاد برند
-        BrandService.create_brand(
+        brand = BrandService.create_brand(
             user=self.request.user,
             validated_data=serializer.validated_data
         )
+        serializer.instance = brand
 
     @action(detail=True, methods=['patch'])
     def review(self, request, pk=None):

@@ -1,9 +1,7 @@
-from rest_framework.routers import DefaultRouter
 from django.urls import path
-from .views import TripViewSet, DriverHomeView, rate_driver
+from .views import DriverHomeView, rate_driver
 
-router = DefaultRouter()
-router.register(r'', TripViewSet, basename='trip')
+from .router import router
 
 urlpatterns = [
     path('home/', DriverHomeView.as_view(), name='driver-home'),

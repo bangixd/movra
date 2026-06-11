@@ -5,6 +5,7 @@ from services.tasks import forward_location_to_analytics_task
 from trips.models import Trip
 from campaigns.models import Campaign
 
+
 @receiver(post_save, sender=DriverLocation)
 def forward_location_to_analytics(sender, instance, created, **kwargs):
     if not created or not instance.trip_id:

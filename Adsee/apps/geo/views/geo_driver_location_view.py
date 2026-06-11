@@ -41,8 +41,13 @@ class DriverLocationViewSet(viewsets.ModelViewSet):
         return DriverLocationService.get_queryset(self.request.user)
 
     def perform_create(self, serializer):
-        # Save the location directly (serializer handles the point)
-        serializer.save(driver=self.request.user)
+        # استفاده از سرویس برای ایجاد موقعیت و اتصال خودکار به سفر فعال
+        location = DriverLocationService.create_location(
+            user=self.request.user,
+            point_data=serializer.validated_data
+        )
+        # تنظیم instance در serializer تا پاسخ شامل اطلاعات کامل شود
+        serializer.instance = location
 
     @action(detail=False, methods=['post'], url_path='batch')
     def batch_upload(self, request):

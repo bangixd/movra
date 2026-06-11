@@ -1,4 +1,5 @@
 from django.db.models.signals import post_save
+from decimal import Decimal
 from django.dispatch import receiver
 from django.conf import settings
 from trips.models import Trip
@@ -69,8 +70,8 @@ def update_wallet_balance(sender, instance, created, **kwargs):
     if instance.status == Transaction.Status.SUCCESS:
         wallet = instance.wallet
         if instance.transaction_type == Transaction.TransactionType.INCOME:
-            wallet.balance += instance.amount
-            wallet.total_earnings += instance.amount
+            wallet.balance += Decimal(instance.amount)
+            wallet.total_earnings += Decimal(instance.amount)
         elif instance.transaction_type == Transaction.TransactionType.WITHDRAWAL:
-            wallet.balance -= instance.amount
+            wallet.balance -= Decimal(instance.amount)
         wallet.save()
