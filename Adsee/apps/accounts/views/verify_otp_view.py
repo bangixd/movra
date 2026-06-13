@@ -21,7 +21,8 @@ class VerifyOTPView(APIView):
     {
         "identifier": "09121111111",
         "otp": "123456",
-        "purpose": "LOGIN"          // اختیاری، پیش‌فرض LOGIN
+        "purpose": "LOGIN",         // اختیاری، پیش‌فرض LOGIN
+        "role": "DRIVER"            // اختیاری، فقط برای purpose=REGISTER (پیش‌فرض CLIENT)
     }
     """
     serializer_class = OTPVerifySerializer
@@ -37,7 +38,8 @@ class VerifyOTPView(APIView):
         identifier = serializer.validated_data['identifier']
         otp_code = serializer.validated_data['otp']
         purpose = request.data.get('purpose', OTP.Purpose.LOGIN)
+        role = serializer.validated_data.get('role')
 
         # فراخوانی سرویس
-        result, http_status = OTPService.verify_otp(identifier, otp_code, purpose)
+        result, http_status = OTPService.verify_otp(identifier, otp_code, purpose, role)
         return Response(result, status=http_status)

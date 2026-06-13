@@ -75,31 +75,35 @@ class OTPService:
 
     @classmethod
     def request_otp(cls, identifier: str, purpose: str):
-        """
-        جریان کامل درخواست OTP:
-        ۱. حذف OTP‌های قبلی
-        ۲. پیدا کردن / ایجاد کاربر
-        ۳. تولید کد جدید
-        ۴. ارسال پیامک
-        Returns: (otp_instance, created_user_flag)
-        """
-        # ۱. حذف OTP‌های معتبر قبلی
+        # حذف OTP‌های قبلی
         cls.delete_existing_otps(identifier, purpose)
-        # ۲. یافتن یا ساخت کاربر
-        user, created = cls.get_or_create_user(identifier)
-        # ۳. ایجاد OTP جدید
+
+        # فقط اگر کاربر از قبل وجود داشته باشد، او را پیدا کن
+        # برای ثبت‌نام، کاربر جدید نسازیم
+        user = None
+        if purpose != OTP.Purpose.REGISTER:
+            user = User.objects.filter(phone=identifier).first()
+            if not user and purpose == OTP.Purpose.LOGIN:
+                # برای ورود هم می‌توانیم خطا بدهیم (کاربر باید وجود داشته باشد)
+                raise ValueError("کاربری با این شماره یافت نشد.")
+            # اگر VERIFY_PROFILE باشد، کاربر باید وجود داشته باشد
+            if not user and purpose == OTP.Purpose.VERIFY_PROFILE:
+                raise ValueError("کاربری با این شماره یافت نشد.")
+        # برای REGISTER، user = None (در مرحلهٔ تأیید ساخته می‌شود)
+
+        # ایجاد OTP جدید (بدون اتصال کاربر برای REGISTER)
         otp = cls.create_otp(identifier, purpose, user=user)
-        # ۴. ارسال SMS
+
+        # ارسال SMS
         try:
             cls.send_otp_sms(identifier, otp.code)
         except Exception as e:
-            # اگر ارسال پیامک شکست خورد، OTP را حذف نکنیم،
-            # اما خطا را به لایهٔ بالا اعلام کنیم
             raise Exception(f"SMS sending failed: {e}")
-        return otp, created
+
+        return otp, user is not None  # created flag (True if user existed)
 
     @classmethod
-    def verify_otp(cls, identifier: str, otp_code: str, purpose: str):
+    def verify_otp(cls, identifier: str, otp_code: str, purpose: str, role: str):
         """
         تأیید کد OTP و برگرداندن توکن در صورت موفقیت
         Returns: (data_dict, http_status)
@@ -136,15 +140,16 @@ class OTPService:
                    }, status.HTTP_200_OK
 
         elif purpose == OTP.Purpose.REGISTER:
-            # اگر کاربری با این شماره از قبل وجود دارد (و OTP مرتبط نبود)
+            # کاربر نباید از قبل وجود داشته باشد
             if User.objects.filter(phone=identifier).exists():
                 return {"detail": "این شماره قبلاً ثبت شده است. لطفاً وارد شوید."}, status.HTTP_409_CONFLICT
 
-            # ایجاد کاربر جدید
+            # ایجاد کاربر جدید با نقش داده‌شده یا پیش‌فرض
             new_user = User.objects.create_user(
                 phone=identifier,
-                password=None,  # بدون رمز عبور، چون با OTP وارد می‌شود
-                is_active=True
+                password=None,
+                is_active=True,
+                role=role if role else User.Role.CLIENT
             )
             refresh = RefreshToken.for_user(new_user)
             return {

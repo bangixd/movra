@@ -26,6 +26,11 @@ class OTPRequestSerializer(serializers.Serializer):
 class OTPVerifySerializer(serializers.Serializer):
     identifier = serializers.CharField(max_length=11)
     otp = serializers.CharField(max_length=6)
+    role = serializers.ChoiceField(
+        choices=User.Role.choices,
+        default=User.Role.CLIENT,   # نقش پیش‌فرض در صورت عدم ارسال
+        required=False
+    )
 
     def validate_identifier(self, value: str) -> str:
         value = value.strip()
