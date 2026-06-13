@@ -1,13 +1,13 @@
 # Dockerfile
-FROM python:3.11-slim
+FROM ubuntu:jammy
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN echo "deb https://repo.abrha.net/ubuntu jammy main restricted universe multiverse" > /etc/apt/sources.list && \
-    echo "deb https://repo.abrha.net/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb https://repo.abrha.net/ubuntu jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb https://repo.abrha.net/ubuntu jammy-security main restricted universe multiverse" >> /etc/apt/sources.list
+RUN echo "deb [trusted=yes] https://repo.abrha.net/ubuntu jammy main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb [trusted=yes] https://repo.abrha.net/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb [trusted=yes] https://repo.abrha.net/ubuntu jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb [trusted=yes] https://repo.abrha.net/ubuntu jammy-security main restricted universe multiverse" >> /etc/apt/sources.list
 
 
 RUN echo 'Acquire::https::Verify-Peer "false";' > /etc/apt/apt.conf.d/99ignore-cert && \
@@ -31,9 +31,6 @@ ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
 
 WORKDIR /app
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-
 ENV PIP_INDEX_URL=https://mirror.abrha.net/repository/pypi/simple
 ENV PIP_TRUSTED_HOST=mirror.abrha.net
 # مطمئن شدن از نصب بودن pip
@@ -41,7 +38,9 @@ RUN python -m ensurepip --upgrade || true
 RUN python -m pip install --upgrade pip
 
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install -r requirements.txt
+
 
 COPY . .
 

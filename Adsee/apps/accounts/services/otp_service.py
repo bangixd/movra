@@ -85,13 +85,10 @@ class OTPService:
         """
         # ۱. حذف OTP‌های معتبر قبلی
         cls.delete_existing_otps(identifier, purpose)
-
         # ۲. یافتن یا ساخت کاربر
         user, created = cls.get_or_create_user(identifier)
-
         # ۳. ایجاد OTP جدید
         otp = cls.create_otp(identifier, purpose, user=user)
-
         # ۴. ارسال SMS
         try:
             cls.send_otp_sms(identifier, otp.code)
@@ -99,7 +96,6 @@ class OTPService:
             # اگر ارسال پیامک شکست خورد، OTP را حذف نکنیم،
             # اما خطا را به لایهٔ بالا اعلام کنیم
             raise Exception(f"SMS sending failed: {e}")
-
         return otp, created
 
     @classmethod

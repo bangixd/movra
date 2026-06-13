@@ -2,9 +2,9 @@ services:
   db:
     image: postgis/postgis:14-3.3
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-adsee_db}
-      POSTGRES_USER: ${POSTGRES_USER:-adsee_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -32,15 +32,15 @@ services:
       - media_volume:/app/media
     environment:
       - DJANGO_SETTINGS_MODULE=Adsee.settings
-      - POSTGRES_DB=${POSTGRES_DB:-adsee_db}
-      - POSTGRES_USER=${POSTGRES_USER:-adsee_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DB_HOST=db
       - DB_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://host.docker.internal:8000/v1}
-      - ANALYTICS_API_KEY=${ANALYTICS_API_KEY:-YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE}
-      - SECRET_KEY=${SECRET_KEY:-wvvsna2jpe^ptl2^cdh&2+6%s2mmmj%c8tma%3^cc7#e-+9wis}
+      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL}
+      - ANALYTICS_API_KEY=${ANALYTICS_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - db
       - redis
@@ -48,20 +48,20 @@ services:
 
   celery_worker:
     build: .
-    command: celery -A Adsee worker -l info --pool=solo
+    command: celery -A Adsee worker -l info
     volumes:
       - .:/app
     environment:
       - DJANGO_SETTINGS_MODULE=Adsee.settings
-      - POSTGRES_DB=${POSTGRES_DB:-adsee_db}
-      - POSTGRES_USER=${POSTGRES_USER:-adsee_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-8E_S1@.?7Pm-aVzjBztW}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DB_HOST=db
       - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://host.docker.internal:8000/v1}
-      - ANALYTICS_API_KEY=${ANALYTICS_API_KEY:-YOs2hZicEJvcW3V3llCC22OYNfOm1-DdaLimF79c-RE}
-      - SECRET_KEY=${SECRET_KEY:-wvvsna2jpe^ptl2^cdh&2+6%s2mmmj%c8tma%3^cc7#e-+9wis}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL}
+      - ANALYTICS_API_KEY=${ANALYTICS_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - db
       - redis
@@ -71,8 +71,10 @@ services:
     image: nginx:1.25-alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl:/etc/nginx/ssl:ro
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     depends_on:

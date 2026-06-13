@@ -4,6 +4,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+
 class OTPRequestSerializer(serializers.Serializer):
 
     identifier = serializers.CharField(max_length=11)
@@ -20,6 +21,7 @@ class OTPRequestSerializer(serializers.Serializer):
         )
         phone_regex(value)
         return value
+
 
 class OTPVerifySerializer(serializers.Serializer):
     identifier = serializers.CharField(max_length=11)
@@ -40,6 +42,7 @@ class OTPVerifySerializer(serializers.Serializer):
         if len(value) != 6:
             raise serializers.ValidationError("OTP must be exactly 6 digits.")
         return value
+
 
 class OTPSerializer(serializers.ModelSerializer):
     """

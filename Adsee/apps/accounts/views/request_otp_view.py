@@ -10,8 +10,18 @@ from accounts.services import OTPService
 
 class RequestOTPView(APIView):
     """
-    API برای درخواست کد احراز هویت
-    کاربر جدید در صورت نیاز ساخته می‌شود
+    API برای درخواست کد احراز هویت.
+
+    در صورت نیاز کاربر جدید ساخته می‌شود و کد OTP از طریق پیامک ارسال می‌گردد.
+
+    **POST** `/v1/auth/otp/`
+
+    **Body** (JSON):
+    ```json
+    {
+        "identifier": "09121111111",
+        "purpose": "REGISTER"       // اختیاری، پیش‌فرض LOGIN
+    }
     """
     serializer_class = OTPRequestSerializer
     throttle_classes = [AnonRateThrottle]

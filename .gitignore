@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+fullchain.pem
+privkey.pem
+
 .idea/
 .idea/workspace.xml
 ../.idea/workspace.xml

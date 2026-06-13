@@ -10,7 +10,19 @@ from accounts.models import OTP
 
 class VerifyOTPView(APIView):
     """
-    API برای تأیید کد OTP و دریافت توکن JWT
+    API برای تأیید کد OTP و دریافت توکن JWT.
+
+    پس از تأیید موفق، توکن‌های `access` و `refresh` به همراه اطلاعات کاربر برگردانده می‌شوند.
+
+    **POST** `/v1/auth/otp/verify/`
+
+    **Body** (JSON):
+    ```json
+    {
+        "identifier": "09121111111",
+        "otp": "123456",
+        "purpose": "LOGIN"          // اختیاری، پیش‌فرض LOGIN
+    }
     """
     serializer_class = OTPVerifySerializer
     throttle_classes = [AnonRateThrottle]
