@@ -23,19 +23,25 @@ RUN rm -f /etc/apt/apt.conf.d/99ignore-cert
 
 # نصب پیش‌نیازهای سیستم
 RUN apt-get update && apt-get install -y \
+    python3.11 python3.11-dev python3.11-venv \
     gcc g++ libpq-dev \
     gdal-bin libgdal-dev \
     && rm -rf /var/lib/apt/lists/* \
 
+
 ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
+ENV PIP_INDEX_URL=https://mirror.abrha.net/repository/pypi/simple
+ENV PIP_TRUSTED_HOST=mirror.abrha.net
+
+# create a virtual environment with Python 3.11
+RUN python3.11 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# now pip is available
+RUN pip install --upgrade pip
 
 WORKDIR /app
 
-ENV PIP_INDEX_URL=https://mirror.abrha.net/repository/pypi/simple
-ENV PIP_TRUSTED_HOST=mirror.abrha.net
-# مطمئن شدن از نصب بودن pip
-RUN python -m ensurepip --upgrade || true
-RUN python -m pip install --upgrade pip
 
 COPY requirements.txt .
 RUN python3 -m pip install --upgrade pip && \

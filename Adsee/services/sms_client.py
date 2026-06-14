@@ -1,8 +1,11 @@
 import requests
 from django.conf import settings
 import logging
+from kavenegar import *
+
 
 logger = logging.getLogger(__name__)
+
 
 class MeliPayamakClient:
     def __init__(self):
@@ -38,4 +41,3 @@ class MeliPayamakClient:
         except Exception as e:
             logger.error(f"SMS sending exception: {e}")
             return False, str(e)
-

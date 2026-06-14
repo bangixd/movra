@@ -54,14 +54,56 @@ class CampaignViewSet(ModelViewSet):
     ### مدیریت طراحی:
     - **GET /campaigns/{id}/design/**: دریافت طراحی فعلی کمپین
     - **PUT/PATCH /campaigns/{id}/design/**: ایجاد یا ویرایش طراحی
+        ### نمونه درخواست ویرایش (PUT/PATCH):
+    ```json
+    {
+        "design_type": "CUSTOM_DESIGN",
+        "template": null,
+        "user_uploaded_file": null,
+        "logo_brand": null,
+        "designer_note": "لطفاً رنگ‌ها را تغییر دهید."
+    }
 
     ### مدیریت محدوده:
     - **GET /campaigns/{id}/area/**: دریافت محدودهٔ جغرافیایی
     - **PUT/PATCH /campaigns/{id}/area/**: ایجاد یا ویرایش محدوده
+        ```json
+    {
+        "campaign": 1,
+        "area_type": "CIRCLE",
+        "city": 10,
+        "neighborhood": 25,
+        "center_point": {
+            "type": "Point",
+            "coordinates": [51.3890, 35.6892]
+        }
+    }
+    {
+    "campaign": 2,
+    "area_type": "SUGGESTED_ROUTE",
+    "city": 10,
+    "neighborhood": 25,
+    "suggested_route": 5
+    }
+    {
+    "campaign": 3,
+    "area_type": "FREE_AREA",
+    "region_polygon": {
+        "type": "Polygon",
+        "coordinates": [[[51.0,35.0],[51.0,36.0],[52.0,36.0],[52.0,35.0],[51.0,35.0]]]
+    }
+    }
 
     ### مدیریت تنظیمات:
     - **GET /campaigns/{id}/setting/**: دریافت تنظیمات کمپین
     - **PUT/PATCH /campaigns/{id}/setting/**: ایجاد یا ویرایش تنظیمات
+        ```json
+    {
+        "active_days": 5,
+        "activity_hours_per_day": "08:00:00",
+        "max_driver": 3,
+        "vehicle_type": 2
+    }
 
     ### مدیریت فاکتور:
     - **GET /campaigns/{id}/invoice/**: دریافت فاکتور کمپین
