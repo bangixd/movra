@@ -1,1 +1,1 @@
-from .admin_views import AdminCategoryViewSet, AdminPostViewSet
+from .admin_views import AdminCategoryViewSet, AdminPostViewSet, AdminPostBlockViewSet, AdminAuthorViewSet

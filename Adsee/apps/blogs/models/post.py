@@ -1,5 +1,22 @@
 from django.db import models
-from django.conf import settings
+
+
+class Author(models.Model):
+    """مدل نویسندهٔ پست‌های وبلاگ"""
+    full_name = models.CharField(max_length=150)
+    bio = models.TextField(blank=True, null=True, help_text="بیوگرافی کوتاه نویسنده")
+    avatar = models.ImageField(upload_to='blog/authors/', blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Author"
+        verbose_name_plural = "Authors"
+
+    def __str__(self):
+        return self.full_name
 
 
 class Category(models.Model):
@@ -17,9 +34,10 @@ class Post(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, allow_unicode=True)
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'Author',
         on_delete=models.CASCADE,
         related_name='blog_posts',
+        null=True, blank=True
     )
     category = models.ForeignKey(
         'Category',
@@ -45,6 +63,7 @@ class Post(models.Model):
 
     def full_text(self):
         return ' '.join(block.text for block in self.blocks.filter(block_type__in=['text', 'heading', 'quote']))
+
 
 class PostBlock(models.Model):
     class BlockType(models.TextChoices):

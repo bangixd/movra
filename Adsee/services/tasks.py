@@ -1,6 +1,6 @@
 from celery import shared_task
 from services.analytics_client import AnalyticsServiceClient
-from services.sms_client import MeliPayamakClient
+from services.sms_client import KavenegarClient
 from clients.models import ClientDocument
 from trips.models import Trip, TripAnalysis
 from campaigns.models import CampaignInvoice
@@ -219,7 +219,7 @@ def fetch_and_store_trip_analysis(self, trip_id):
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=10)
 def send_otp_sms_task(self, phone, code, *args, **kwargs):
-    client = MeliPayamakClient()
+    client = KavenegarClient()
     print(phone, code, 50*'-')
     message = f'کد تأیید شما: {code}\nلغو11'
     success, status, rec_id = client.send_sms(phone, message)

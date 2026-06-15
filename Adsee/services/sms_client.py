@@ -7,6 +7,34 @@ from kavenegar import *
 logger = logging.getLogger(__name__)
 
 
+class KavenegarClient:
+    def __init__(self):
+        self.api_key = '646871784E586D7A596F4B672B594B465A58667861417A4536433455437A4E487051796D376F78423241733D'
+        self.sender = ''
+        self.api = KavenegarAPI(self.api_key)
+        self.url = f'https://api.kavenegar.com/v1/{self.api_key}/verify/lookup.json'
+
+    def send_sms(self, to: str, message: str):
+        payload = {
+            'receptor': to,
+            'toekn': message,
+            'template': 'movra'
+        }
+        try:
+            response = requests.get(url=self.url,params=payload)
+            result = response.json()
+            if result.get('status') == 200:
+                logger.info(f"SMS sent to {to}")
+                return True, result.get('status'), result.get('message')
+            else:
+                logger.error(f"SMS failed: {result.get('status')}")
+                return False, result.get('status'), result.get('message')
+        except APIException as e:
+            print(e)
+        except HTTPException as e:
+            print(e)
+
+
 class MeliPayamakClient:
     def __init__(self):
         self.base_url = 'https://console.melipayamak.com/api/send'
