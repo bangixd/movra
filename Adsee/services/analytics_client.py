@@ -1,19 +1,61 @@
-import requests
-from django.conf import settings
 import logging
+from typing import Any, Dict, Optional
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
+DEFAULT_TIMEOUT = 10
 
 class AnalyticsServiceClient:
-    def __init__(self):
-        self.base_url = settings.ANALYTICS_SERVICE_URL
-        self.api_key = settings.ANALYTICS_API_KEY
+    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None,
+                 session: Optional[requests.Session] = None, timeout: int = DEFAULT_TIMEOUT):
+        """Analytics service client.
 
-    def _headers(self):
+        base_url and api_key can be injected for testing; otherwise read from Django settings.
+        A requests.Session with retry logic is used for connection pooling and resilience.
+        """
+        self.base_url = base_url or settings.ANALYTICS_SERVICE_URL
+        self.api_key = api_key or settings.ANALYTICS_API_KEY
+        self.timeout = timeout
+        self.session = session or self._build_session()
+
+    def _build_session(self) -> requests.Session:
+        session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            backoff_factor=1,
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        return session
+
+    def _headers(self) -> Dict[str, str]:
         return {
             "x-api-key": self.api_key,
             "Content-Type": "application/json"
         }
+
+    def _request(self, method: str, path: str, **kwargs) -> Any:
+        url = f"{self.base_url.rstrip('/')}/{path.lstrip('/')}"
+        headers = kwargs.pop("headers", None) or self._headers()
+        timeout = kwargs.pop("timeout", self.timeout)
+        try:
+            resp = self.session.request(method, url, headers=headers, timeout=timeout, **kwargs)
+            resp.raise_for_status()
+            try:
+                return resp.json()
+            except ValueError:
+                logger.debug("Non-JSON response from %s: %s", url, resp.text)
+                return resp.text
+        except requests.exceptions.RequestException as e:
+            logger.exception("Analytics request failed: %s %s", method, url)
+            raise
 
     def check_conn(self):
         payload = {
@@ -28,12 +70,8 @@ class AnalyticsServiceClient:
                 }
             ]
         }
-        resp = requests.post(f"{self.base_url}/analyze-trip",
-                             json=payload, headers=self._headers())
-        if not resp.ok:
-            print("ERROR:", resp.status_code, resp.text)  # ← اضافه کن
-        resp.raise_for_status()
-        return resp.json()
+        resp = self._request("POST", "/analyze-trip", json=payload)
+        return resp
 
     def register_vehicle(self, vehicle_id: str, display_name: str = "", **extra_fields):
         """ ثبت یک خودروی جدید در سرویس خارجی """
@@ -44,17 +82,10 @@ class AnalyticsServiceClient:
 
         }
         try:
-            resp = requests.post(
-                f"{self.base_url}/vehicles",
-                json=payload,
-                headers=self._headers(),
-                timeout=5
-            )
-            print(self._headers())
-            resp.raise_for_status()
-            return resp.json()
+            resp = self._request("POST", "/vehicles", json=payload, timeout=5)
+            return resp
         except requests.exceptions.RequestException as e:
-            logger.error(f"Vehicle registration failed: {e}")
+            logger.error("Vehicle registration failed: %s", e)
             return None
 
     def send_single_location(self, vehicle_id: str, campaign_id: str,
@@ -73,69 +104,31 @@ class AnalyticsServiceClient:
             "heading": heading,
             "timestamp": timestamp
         }
-        resp = requests.post(
-            f"{self.base_url}/gps-points",
-            json=payload,
-            headers=self._headers(),
-            timeout=5
-        )
-        resp.raise_for_status()
-        return resp.json()
+        return self._request("POST", "/gps-points", json=payload, timeout=5)
 
     def calculate_earnings(self, vehicle_id: str, start_ts: int, end_ts: int):
         """ دریافت درآمد محاسبه‌شده برای بازه‌ی زمانی """
-        resp = requests.get(
-            f"{self.base_url}/vehicles/{vehicle_id}/analysis/earnings",
-            params={"start_ts": start_ts, "end_ts": end_ts},
-            headers=self._headers(),
-            timeout=10
-        )
-        resp.raise_for_status()
-        return resp.json()   # {"earnings": 12345.67}
+        return self._request("GET", f"/vehicles/{vehicle_id}/analysis/earnings",
+                            params={"start_ts": start_ts, "end_ts": end_ts})
 
     def send_batch_locations(self, points: list):
         """
         ارسال دسته‌ای GPS
         points: لیست دیکشنری‌های حاوی vehicle_id, campaign_id, session_id, lat, lon, speed, heading, timestamp
         """
-        resp = requests.post(
-            f"{self.base_url}/gps-points/batch",
-            json=points,
-            headers=self._headers(),
-            timeout=10
-        )
-        resp.raise_for_status()
-        return resp.json()
+        return self._request("POST", "/gps-points/batch", json=points)
 
     def get_analysis_summary(self, vehicle_id: str, start_ts: int, end_ts: int):
         """خلاصهٔ تحلیل (active_time, distance, exposure, impressions, confidence)"""
-        resp = requests.get(
-            f"{self.base_url}/vehicles/{vehicle_id}/analysis/summary",
-            params={"start_ts": start_ts, "end_ts": end_ts},
-            headers=self._headers(),
-            timeout=10
-        )
-        resp.raise_for_status()
-        return resp.json()
+        return self._request("GET", f"/vehicles/{vehicle_id}/analysis/summary",
+                            params={"start_ts": start_ts, "end_ts": end_ts})
 
     def get_analysis_full(self, vehicle_id: str, start_ts: int, end_ts: int, bucket_seconds=300):
         """گزارش کامل تحلیل"""
-        resp = requests.get(
-            f"{self.base_url}/vehicles/{vehicle_id}/analysis",
-            params={"start_ts": start_ts, "end_ts": end_ts, "bucket_seconds": bucket_seconds},
-            headers=self._headers(),
-            timeout=10
-        )
-        resp.raise_for_status()
-        return resp.json()
+        return self._request("GET", f"/vehicles/{vehicle_id}/analysis",
+                            params={"start_ts": start_ts, "end_ts": end_ts, "bucket_seconds": bucket_seconds})
 
     def create_analysis_run(self, vehicle_id: str, start_ts: int, end_ts: int):
         """ایجاد snapshot برای تسویه (analysis-run)"""
-        resp = requests.post(
-            f"{self.base_url}/vehicles/{vehicle_id}/analysis-runs",
-            json={"start_ts": start_ts, "end_ts": end_ts},
-            headers=self._headers(),
-            timeout=10
-        )
-        resp.raise_for_status()
-        return resp.json()  # حاوی run_id
+        return self._request("POST", f"/vehicles/{vehicle_id}/analysis-runs",
+                            json={"start_ts": start_ts, "end_ts": end_ts})

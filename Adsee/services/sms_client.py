@@ -1,53 +1,82 @@
+import logging
+from typing import Tuple, Union
+
 import requests
 from django.conf import settings
-import logging
-from kavenegar import *
-
+from kavenegar import KavenegarAPI, APIException, HTTPException
 
 logger = logging.getLogger(__name__)
 
+SMS_SUCCESS_RESPONSE = 200
+MELIPAYAMAK_SUCCESS_STATUS = 'عملیات موفق'
+DEFAULT_TIMEOUT = 10
+
+
 
 class KavenegarClient:
-    def __init__(self):
-        self.api_key = '646871784E586D7A596F4B672B594B465A58667861417A4536433455437A4E487051796D376F78423241733D'
-        self.sender = ''
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or settings.KAVENEGAR_API_KEY
         self.api = KavenegarAPI(self.api_key)
         self.url = f'https://api.kavenegar.com/v1/{self.api_key}/verify/lookup.json'
 
-    def send_sms(self, to: str, message: str):
+    def send_sms(self, to: str, message: str) -> Tuple[bool, Union[int, str], str]:
+        """
+        Send SMS via Kavenegar.
+
+        Args:
+            to: Recipient phone number
+            message: SMS text content
+
+        Returns:
+            Tuple of (success: bool, status: int|str, message: str)
+        """
         payload = {
             'receptor': to,
             'toekn': message,
             'template': 'movra'
         }
         try:
-            response = requests.get(url=self.url,params=payload)
+            response = requests.get(url=self.url, params=payload, timeout=DEFAULT_TIMEOUT)
+            response.raise_for_status()
             result = response.json()
-            if result.get('status') == 200:
-                logger.info(f"SMS sent to {to}")
-                return True, result.get('status'), result.get('message')
+            
+            is_success = result.get('status') == SMS_SUCCESS_RESPONSE
+            if is_success:
+                logger.info("SMS sent to %s (status: %s)", to, result.get('status'))
             else:
-                logger.error(f"SMS failed: {result.get('status')}")
-                return False, result.get('status'), result.get('message')
-        except APIException as e:
-            print(e)
-        except HTTPException as e:
-            print(e)
+                logger.error("SMS failed for %s: %s", to, result.get('status'))
+            
+            return is_success, result.get('status'), result.get('message', '')
+        except (APIException, HTTPException) as e:
+            logger.exception("Kavenegar API exception: %s", e)
+            return False, str(e), ''
+        except requests.RequestException as e:
+            logger.exception("Kavenegar request failed: %s", e)
+            return False, str(e), ''
 
 
 class MeliPayamakClient:
-    def __init__(self):
-        self.base_url = 'https://console.melipayamak.com/api/send'
-        self.key_url = settings.MELIPAYAMAK_KEY
-        self.from_number = settings.MELIPAYAMAK_FROM
-
-    def send_sms(self, to: str, message: str):
+    def __init__(self, base_url: str = None, key_url: str = None, from_number: str = None):
         """
-        ارسال یک پیامک تکی
-        to: شماره گیرنده (مثلاً '09120001122')
-        message: متن پیامک
+        Initialize MeliPayamak SMS client.
+        
+        Args can be injected for testing; otherwise read from Django settings.
         """
+        self.base_url = base_url or 'https://console.melipayamak.com/api/send'
+        self.key_url = key_url or settings.MELIPAYAMAK_KEY
+        self.from_number = from_number or settings.MELIPAYAMAK_FROM
 
+    def send_sms(self, to: str, message: str) -> Tuple[bool, str, str]:
+        """
+        Send a single SMS via MeliPayamak.
+
+        Args:
+            to: Recipient phone number (e.g., '09120001122')
+            message: SMS text content
+
+        Returns:
+            Tuple of (success: bool, status: str, receipt_id: str)
+        """
         payload = {
             'from': self.from_number,
             'to': to,
@@ -57,15 +86,18 @@ class MeliPayamakClient:
             response = requests.post(
                 f'{self.base_url}/simple/{self.key_url}',
                 json=payload,
-                timeout=10
+                timeout=DEFAULT_TIMEOUT
             )
+            response.raise_for_status()
             result = response.json()
-            if result.get('status') == 'عملیات موفق':
-                logger.info(f"SMS sent to {to}")
-                return True, result.get('status'), result.get('recId')
+            
+            is_success = result.get('status') == MELIPAYAMAK_SUCCESS_STATUS
+            if is_success:
+                logger.info("SMS sent to %s (receipt: %s)", to, result.get('recId'))
             else:
-                logger.error(f"SMS failed: {result.get('status')}")
-                return False, result.get('status'), result.get('recId')
-        except Exception as e:
-            logger.error(f"SMS sending exception: {e}")
-            return False, str(e)
+                logger.error("SMS failed for %s: %s", to, result.get('status'))
+            
+            return is_success, result.get('status', ''), result.get('recId', '')
+        except requests.RequestException as e:
+            logger.exception("SMS sending failed: %s", e)
+            return False, str(e), ''

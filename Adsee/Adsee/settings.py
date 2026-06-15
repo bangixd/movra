@@ -279,6 +279,10 @@ ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID")          # از زری�
 ZARINPAL_SANDBOX = os.getenv("ZARINPAL_SANDBOX")                             # در محیط واقعی False کن
 ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL")   # آدرس بازگشت
 
+# SMS Services
+# Kavenegar
+KAVENEGAR_API_KEY = os.environ.get('KAVENEGAR_API_KEY', '')
+
 # MeliPayamak
 MELIPAYAMAK_URL = os.environ.get('MELIPAYAMAK_URL', 'url')
 MELIPAYAMAK_KEY = os.environ.get('MELIPAYAMAK_KEY', 'url')
