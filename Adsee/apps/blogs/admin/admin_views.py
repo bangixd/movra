@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions
+from django.shortcuts import get_object_or_404
 from blogs.models import Post, Category, Author, PostBlock
 from blogs.serializers import PostDetailSerializer, PostListSerializer, CategorySerializer, AuthorSerializer, PostBlockSerializer
 from utils.permissions import IsAdminUser
@@ -182,3 +183,10 @@ class AdminPostBlockViewSet(viewsets.ModelViewSet):
         if post_id:
             queryset = queryset.filter(post_id=post_id)
         return queryset
+    
+    def perform_create(self, serializer):
+        post_id = self.request.data.get('post') or self.request.query_params.get('post')
+        if not post_id:
+            raise serializers.ValidationError({"post": "This field is required."})
+        post = get_object_or_404(Post, pk=post_id)
+        serializer.save(post=post)

@@ -15,7 +15,7 @@ class OTPService:
     """سرویس مدیریت OTP"""
 
     @staticmethod
-    def generate_otp_code(length=6) -> str:
+    def generate_otp_code(length=4) -> str:
         """تولید کد تصادفی عددی"""
         return ''.join([str(random.randint(0, 9)) for _ in range(length)])
 

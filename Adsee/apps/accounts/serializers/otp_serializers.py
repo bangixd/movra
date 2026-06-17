@@ -44,8 +44,8 @@ class OTPVerifySerializer(serializers.Serializer):
         value = value.strip()
         if not value.isdigit():
             raise serializers.ValidationError("OTP must contain only digits.")
-        if len(value) != 6:
-            raise serializers.ValidationError("OTP must be exactly 6 digits.")
+        if len(value) != 4:
+            raise serializers.ValidationError("OTP must be exactly 4 digits.")
         return value
 
 

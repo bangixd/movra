@@ -12,7 +12,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class PostBlockSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostBlock
-        fields = ['id', 'block_type', 'title', 'text', 'image', 'order']
+        fields = ['id', 'post', 'block_type', 'title', 'text', 'image', 'order']
 
 
 class AuthorSerializer(serializers.ModelSerializer):
