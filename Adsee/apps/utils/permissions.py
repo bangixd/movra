@@ -12,6 +12,7 @@ class IsClientUser(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user.is_authenticated and hasattr(request.user, 'client_profile')
 
+
 class IsDriverUser(permissions.BasePermission):
     """
     کاربری که پروفایل Driver دارد.
@@ -21,6 +22,7 @@ class IsDriverUser(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return request.user.is_authenticated and hasattr(request.user, 'driver_profile')
+
 
 class IsPrintShopUser(permissions.BasePermission):
     """اجازه فقط به کاربران دارای نقش PRINT_SHOP یا ادمین"""
@@ -35,6 +37,7 @@ class IsPrintShopUser(permissions.BasePermission):
                 getattr(request.user, 'role', None) == User.Role.PRINT_SHOP
         )
 
+
 class IsPrintShopOrAdmin(permissions.BasePermission):
     """
     دسترسی برای کاربران ادمین یا کاربرانی که نقش PrintShop دارند.
@@ -44,6 +47,7 @@ class IsPrintShopOrAdmin(permissions.BasePermission):
             return False
         # ادمین باشد یا نقش CLIENT داشته باشد
         return request.user.is_staff or request.user.role == User.Role.PRINT_SHOP
+
 
 class IsClientOrAdmin(permissions.BasePermission):
     """
@@ -55,11 +59,13 @@ class IsClientOrAdmin(permissions.BasePermission):
         # ادمین باشد یا نقش CLIENT داشته باشد
         return request.user.is_staff or request.user.role == 'CLIENT'
 
+
 class IsDriverOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
         return request.user.is_staff or request.user.role == 'DRIVER'
+
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
@@ -80,11 +86,13 @@ class IsOwnerOrAdmin(permissions.BasePermission):
             return True
         return False
 
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return request.user.is_authenticated
         return request.user.is_staff
+
 
 class IsAdminUser(permissions.BasePermission):
     def has_permission(self, request, view):

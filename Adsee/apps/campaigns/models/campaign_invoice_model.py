@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
+
 class CampaignInvoice(models.Model):
 
     class Status(models.TextChoices):
@@ -9,10 +10,10 @@ class CampaignInvoice(models.Model):
         EXPIRED = "EXPIRED", "Expired"
         VOID = "VOID", "Void"
 
-    campaign = models.ForeignKey(
+    campaign = models.OneToOneField(
         "Campaign",
         on_delete=models.CASCADE,
-        related_name="invoices"  # جمع بسته شود
+        related_name="invoice"
     )
 
     invoice_number = models.CharField(max_length=50, unique=True)

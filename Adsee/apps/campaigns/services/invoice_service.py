@@ -31,6 +31,29 @@ class InvoiceService:
         Returns:
             نمونهٔ فاکتور ساخته‌شده
         """
+        invoice = CampaignInvoice.objects.filter(
+            campaign=campaign
+        ).order_by('-created_at').first()
+        if not invoice:
+            # اگر هیچ فاکتوری وجود نداشت، یک فاکتور جدید بساز
+            invoice = CampaignInvoice.objects.create(
+                campaign=campaign,
+                invoice_number=generate_invoice_number(),
+                subtotal_price=extra_amount,
+                discount_amount=Decimal('0'),
+                tax_amount=extra_amount * Decimal('0.09'),
+                total_price=extra_amount * Decimal('1.09'),
+                expires_at=timezone.now() + timedelta(minutes=15),
+                status=CampaignInvoice.Status.ISSUED,
+                modification_type=modification_type,
+                modification_data=[],  # آرایهٔ خالی
+            )
+        modifications = invoice.modification_data or []
+        modifications.append({
+            "type": modification_type,
+            "date": timezone.now().isoformat(),
+            "data": modification_data
+        })
         subtotal = extra_amount
         discount = Decimal('0')
         tax = extra_amount * Decimal('0.09')
@@ -43,20 +66,17 @@ class InvoiceService:
         }
         if snapshot_extra:
             snapshot.update(snapshot_extra)
+        invoice.modification_data = modifications
+        invoice.modification_type = modification_type  # آخرین نوع تغییر
+        invoice.subtotal_price += extra_amount
+        invoice.tax_amount = invoice.subtotal_price * Decimal('0.09')
+        invoice.total_price = invoice.subtotal_price * Decimal('1.09')
+        invoice.status = CampaignInvoice.Status.ISSUED
+        invoice.expires_at = timezone.now() + timedelta(minutes=15)
+        invoice.snapshot = snapshot
+        invoice.discount_amount = discount
+        invoice.save()
 
-        invoice = CampaignInvoice.objects.create(
-            campaign=campaign,
-            invoice_number=generate_invoice_number(),
-            subtotal_price=subtotal,
-            discount_amount=discount,
-            tax_amount=tax,
-            total_price=total,
-            expires_at=timezone.now() + timedelta(minutes=15),
-            status=CampaignInvoice.Status.ISSUED,
-            modification_type=modification_type,
-            modification_data=modification_data,
-            snapshot=snapshot,
-        )
         return invoice
 
     @staticmethod

@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from campaigns.models import CampaignInvoice
+
+
 class CampaignInvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignInvoice

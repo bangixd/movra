@@ -9,7 +9,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'', CampaignViewSet, basename='campaign')
+router.register(r'campaigns', CampaignViewSet, basename='campaign')
 router.register(r'goals', CampaignGoalViewSet, basename='goal')
 router.register(r'banner-types', BannerTypeViewSet, basename='banner-type')
 router.register(r'templates', TemplateViewSet, basename='template')

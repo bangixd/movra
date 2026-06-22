@@ -44,7 +44,7 @@ class CampaignAreaService:
         بررسی مالکیت کمپین توسط کاربر
         Raises: PermissionDenied
         """
-        if campaign.client_id != user.id:
+        if campaign.client.user.id != user.id:
             raise PermissionDenied("شما مجاز به استفاده از این کمپین نیستید.")
 
     @staticmethod
