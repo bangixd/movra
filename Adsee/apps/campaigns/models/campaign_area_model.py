@@ -3,6 +3,7 @@ from django.contrib.gis.db import models as geomodels
 from django.core.exceptions import ValidationError
 from .campaign_model import Campaign
 
+
 class CampaignArea(geomodels.Model):
     class AreaType(models.TextChoices):
         CIRCLE = "CIRCLE", "Circle"
@@ -47,10 +48,8 @@ class CampaignArea(geomodels.Model):
                                                help_text="شعاع دایره به متر (مقدار ثابت)")
 
     # حالت 2: مسیرهای پیشنهادی
-    suggested_route = geomodels.ForeignKey(
+    suggested_routes = models.ManyToManyField(
         "geo.SuggestedRoute",
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name="campaign_areas"
     )
@@ -71,13 +70,13 @@ class CampaignArea(geomodels.Model):
                 raise ValidationError("برای حالت دایره، city و neighborhood الزامی است.")
             if not self.center_point :
                 raise ValidationError("برای حالت دایره، center_point  الزامی است.")
-            if self.suggested_route or self.region_polygon:
+            if self.suggested_routes or self.region_polygon:
                 raise ValidationError("برای حالت دایره فقط فیلدهای مربوطه باید پر شوند.")
 
         elif self.area_type == self.AreaType.SUGGESTED_ROUTE:
             if not self.city or not self.neighborhood:
                 raise ValidationError("برای مسیر پیشنهادی، city و neighborhood الزامی است.")
-            if not self.suggested_route:
+            if not self.suggested_routes:
                 raise ValidationError("برای مسیر پیشنهادی، suggested_route الزامی است.")
             if self.center_point or self.region_polygon:
                 raise ValidationError("برای مسیر پیشنهادی فقط فیلدهای مربوطه باید پر شوند.")
@@ -85,7 +84,7 @@ class CampaignArea(geomodels.Model):
         elif self.area_type == self.AreaType.FREE_AREA:
             if not self.region_polygon or not self.city:
                 raise ValidationError("برای منطقه آزاد، region_polygon الزامی است.")
-            if self.neighborhood or self.center_point or self.suggested_route:
+            if self.neighborhood or self.center_point or self.suggested_routes:
                 raise ValidationError("برای منطقه آزاد فقط region_polygon باید پر شود.")
     # متدهایی برای محاسبه یا دسترسی راحت‌تر به داده‌ها
     def get_targeting_area_geometry(self):
@@ -101,9 +100,15 @@ class CampaignArea(geomodels.Model):
             return self.region_polygon
 
         if self.area_type == self.AreaType.SUGGESTED_ROUTE:
-            if not self.suggested_route:
+            routes = self.suggested_routes.all()
+            if not routes:
                 return None
-            return getattr(self.suggested_route, "path_geometry", None)
+            geometries = [route.path for route in routes if route.path]
+            if not geometries:
+                return None
+            # ترکیب همهٔ مسیرها در یک MultiLineString
+            from django.contrib.gis.geos import MultiLineString
+            return MultiLineString(*geometries)
 
         if self.area_type == self.AreaType.CIRCLE:
             if not self.center_point:

@@ -2,7 +2,9 @@ from django.db import models
 from django.contrib.gis.db import models as geomodels
 from geo.models import Province
 
+
 class City(geomodels.Model):
+    boundary = models.PolygonField(srid=4326, null=True, blank=True, help_text="محدودهٔ اداری شهر")
     province = geomodels.ForeignKey(
         Province,
         on_delete=models.SET_NULL,

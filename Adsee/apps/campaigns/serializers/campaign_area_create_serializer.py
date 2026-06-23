@@ -1,7 +1,15 @@
 from rest_framework import serializers
 from campaigns.models import CampaignArea
+from geo.models import SuggestedRoute
+
 
 class CampaignAreaCreateSerializer(serializers.ModelSerializer):
+    suggested_routes = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=SuggestedRoute.objects.all(),
+        required=False
+    )
+
     class Meta:
         model = CampaignArea
         fields = [
@@ -11,7 +19,7 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
             "city",
             "neighborhood",
             "center_point",
-            "suggested_route",
+            "suggested_routes",
             "region_polygon",
         ]
 
@@ -28,7 +36,7 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
         city = attrs.get("city", getattr(instance, "city", None))
         neighborhood = attrs.get("neighborhood", getattr(instance, "neighborhood", None))
         center_point = attrs.get("center_point", getattr(instance, "center_point", None))
-        suggested_route = attrs.get("suggested_route", getattr(instance, "suggested_route", None))
+        suggested_routes = attrs.get("suggested_routes", getattr(instance, "suggested_routes", None))
         region_polygon = attrs.get("region_polygon", getattr(instance, "region_polygon", None))
         campaign = attrs.get("campaign", getattr(instance, "campaign", None))
 
@@ -57,7 +65,7 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
             if not center_point:
                 errors["center_point"] = "This field is required for CIRCLE."
 
-            if suggested_route:
+            if suggested_routes:
                 errors["suggested_route"] = "This field must not be set for CIRCLE."
             if region_polygon:
                 errors["region_polygon"] = "This field must not be set for CIRCLE."
@@ -67,26 +75,17 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
 
         elif area_type == CampaignArea.AreaType.SUGGESTED_ROUTE:
             errors = {}
-
             if not city:
                 errors["city"] = "This field is required for SUGGESTED_ROUTE."
             if not neighborhood:
                 errors["neighborhood"] = "This field is required for SUGGESTED_ROUTE."
-            if not suggested_route:
-                errors["suggested_route"] = "This field is required for SUGGESTED_ROUTE."
+            if not suggested_routes:
+                errors["suggested_routes"] = "At least one suggested route is required."
 
             if center_point:
                 errors["center_point"] = "This field must not be set for SUGGESTED_ROUTE."
-
             if region_polygon:
                 errors["region_polygon"] = "This field must not be set for SUGGESTED_ROUTE."
-
-            # Optional route consistency checks
-            if suggested_route and city and getattr(suggested_route, "city_id", None) not in [None, city.id]:
-                errors["suggested_route"] = "This route does not belong to the selected city."
-
-            if suggested_route and neighborhood and getattr(suggested_route, "neighborhood_id", None) not in [None, neighborhood.id]:
-                errors["suggested_route"] = "This route does not belong to the selected neighborhood."
 
             if errors:
                 raise serializers.ValidationError(errors)
@@ -103,7 +102,7 @@ class CampaignAreaCreateSerializer(serializers.ModelSerializer):
                 errors["neighborhood"] = "This field must not be set for FREE_AREA."
             if center_point:
                 errors["center_point"] = "This field must not be set for FREE_AREA."
-            if suggested_route:
+            if suggested_routes:
                 errors["suggested_route"] = "This field must not be set for FREE_AREA."
 
             if errors:

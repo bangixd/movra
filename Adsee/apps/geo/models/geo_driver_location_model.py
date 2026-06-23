@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.gis.db import models as geomodels
 from django.conf import settings
 
+
 class DriverLocation(geomodels.Model):
     driver = geomodels.ForeignKey(
         settings.AUTH_USER_MODEL,

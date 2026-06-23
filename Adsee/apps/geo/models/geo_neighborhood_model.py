@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.gis.db import models as geomodels
 from geo.models import City
 
+
 class Neighborhood(geomodels.Model):
     city = geomodels.ForeignKey(
         City,
