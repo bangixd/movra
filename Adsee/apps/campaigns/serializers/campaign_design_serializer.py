@@ -3,6 +3,7 @@ from campaigns.models import CampaignDesign
 from print_shops.serializers import PrintShopProfileSerializer
 from campaigns.serializers import ProductImageSerializer, TemplateSerializer
 
+
 class CampaignDesignSerializer(serializers.ModelSerializer):
     print_shop_detail = PrintShopProfileSerializer(source='print_shop', read_only=True)
     template_detail = TemplateSerializer(source='template', read_only=True)

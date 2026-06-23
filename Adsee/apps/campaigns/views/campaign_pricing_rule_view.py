@@ -6,6 +6,24 @@ from campaigns.serializers import CampaignPricingRuleSerializer
 
 class CampaignPricingRuleViewSet(ModelViewSet):
     """
+
+    DESIGN_BASE_COST
+
+    DESIGN_CUSTOM_COST
+
+    DESIGN_UPLOAD_COST
+
+    AREA_CIRCLE_COST_PER_KM
+
+    AREA_SUGGESTED_ROUTE_COST_PER_KM
+
+    AREA_FREE_COST_MULTIPLIER
+
+    DRIVER_COST_PER_DAY
+
+    BILLBOARD_DAILY_IMPRESSIONS
+    اینها کلید های اجباری و پایه هستند که ادمین باید انها را مقدار دهی کند
+
     مدیریت قوانین قیمت‌گذاری (فقط ادمین).
 
     ### متدهای اصلی:
