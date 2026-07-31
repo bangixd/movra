@@ -72,26 +72,15 @@ class OTPService:
         """
         send_otp_sms_task.delay(phone=phone, code=code)
 
-
     @classmethod
     def request_otp(cls, identifier: str, purpose: str):
-        # حذف OTP‌های قبلی
+        # حذف OTP‌های معتبر قبلی برای همین شماره و هدف
         cls.delete_existing_otps(identifier, purpose)
 
-        # فقط اگر کاربر از قبل وجود داشته باشد، او را پیدا کن
-        # برای ثبت‌نام، کاربر جدید نسازیم
-        user = None
-        if purpose != OTP.Purpose.REGISTER:
-            user = User.objects.filter(phone=identifier).first()
-            if not user and purpose == OTP.Purpose.LOGIN:
-                # برای ورود هم می‌توانیم خطا بدهیم (کاربر باید وجود داشته باشد)
-                raise ValueError("کاربری با این شماره یافت نشد.")
-            # اگر VERIFY_PROFILE باشد، کاربر باید وجود داشته باشد
-            if not user and purpose == OTP.Purpose.VERIFY_PROFILE:
-                raise ValueError("کاربری با این شماره یافت نشد.")
-        # برای REGISTER، user = None (در مرحلهٔ تأیید ساخته می‌شود)
+        # یافتن کاربر (اگر وجود داشته باشد) ولی بدون خطا
+        user = User.objects.filter(phone=identifier).first()
 
-        # ایجاد OTP جدید (بدون اتصال کاربر برای REGISTER)
+        # ایجاد OTP جدید (user می‌تواند None باشد – در verify پر می‌شود)
         otp = cls.create_otp(identifier, purpose, user=user)
 
         # ارسال SMS
@@ -100,7 +89,36 @@ class OTPService:
         except Exception as e:
             raise Exception(f"SMS sending failed: {e}")
 
-        return otp, user is not None  # created flag (True if user existed)
+        return otp, user is not None  # True اگر کاربر وجود داشت
+
+    # @classmethod
+    # def request_otp(cls, identifier: str, purpose: str):
+    #     # حذف OTP‌های قبلی
+    #     cls.delete_existing_otps(identifier, purpose)
+    #
+    #     # فقط اگر کاربر از قبل وجود داشته باشد، او را پیدا کن
+    #     # برای ثبت‌نام، کاربر جدید نسازیم
+    #     user = None
+    #     if purpose != OTP.Purpose.REGISTER:
+    #         user = User.objects.filter(phone=identifier).first()
+    #         if not user and purpose == OTP.Purpose.LOGIN:
+    #             # برای ورود هم می‌توانیم خطا بدهیم (کاربر باید وجود داشته باشد)
+    #             raise ValueError("کاربری با این شماره یافت نشد.")
+    #         # اگر VERIFY_PROFILE باشد، کاربر باید وجود داشته باشد
+    #         if not user and purpose == OTP.Purpose.VERIFY_PROFILE:
+    #             raise ValueError("کاربری با این شماره یافت نشد.")
+    #     # برای REGISTER، user = None (در مرحلهٔ تأیید ساخته می‌شود)
+    #
+    #     # ایجاد OTP جدید (بدون اتصال کاربر برای REGISTER)
+    #     otp = cls.create_otp(identifier, purpose, user=user)
+    #
+    #     # ارسال SMS
+    #     try:
+    #         cls.send_otp_sms(identifier, otp.code)
+    #     except Exception as e:
+    #         raise Exception(f"SMS sending failed: {e}")
+    #
+    #     return otp, user is not None  # created flag (True if user existed)
 
     @classmethod
     def verify_otp(cls, identifier: str, otp_code: str, purpose: str, role: str):
@@ -127,10 +145,12 @@ class OTPService:
 
         # ۳. مدیریت بر اساس نوع purpose
         if purpose == OTP.Purpose.LOGIN:
-            if not user:
-                return {"detail": "کاربر یافت نشد. لطفاً ابتدا ثبت‌نام کنید."}, status.HTTP_400_BAD_REQUEST
-            if not user.is_active:
-                return {"detail": "حساب کاربری غیرفعال است."}, status.HTTP_403_FORBIDDEN
+            if user:
+                if not user.is_active:
+                    return {"detail": "حساب کاربری غیرفعال است."}, status.HTTP_403_FORBIDDEN
+            else:
+                role = role if role else User.Role.CLIENT
+                user = User.objects.create_user(phone=identifier, role=role, is_active=True)
 
             refresh = RefreshToken.for_user(user)
             return {

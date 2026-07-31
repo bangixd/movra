@@ -8,7 +8,7 @@ User = get_user_model()
 class OTPRequestSerializer(serializers.Serializer):
 
     identifier = serializers.CharField(max_length=11)
-    purpose = serializers.ChoiceField(choices=OTP.Purpose.choices, default=OTP.Purpose.LOGIN)
+    purpose = serializers.ChoiceField(choices=OTP.Purpose.choices, default=OTP.Purpose.LOGIN, required=False)
 
     def validate_identifier(self, value):
         """
