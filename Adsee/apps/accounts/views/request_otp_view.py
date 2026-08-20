@@ -50,6 +50,8 @@ class RequestOTPView(APIView):
             {
                 "detail": f"کد تأیید به {identifier} ارسال شد. "
                           f"این کد تا {settings.OTP_CODE_EXPIRY_MINUTES} دقیقه معتبر است."
+                          f"code {otp.code}"
+
             },
             status=status.HTTP_200_OK
         )

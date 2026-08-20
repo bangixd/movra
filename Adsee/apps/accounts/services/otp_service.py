@@ -156,7 +156,13 @@ class OTPService:
             return {
                        'refresh': str(refresh),
                        'access': str(refresh.access_token),
-                       'user': UserSerializer(user).data
+                       'user': {
+                            'id': user.id,
+                            'phone': user.phone,
+                            'role': user.role,
+                            'has_client_profile': hasattr(user, 'client_profile'),
+                            'has_driver_profile': hasattr(user, 'driver_profile'),
+                       }
                    }, status.HTTP_200_OK
 
         elif purpose == OTP.Purpose.REGISTER:

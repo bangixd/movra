@@ -53,11 +53,7 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
         return ClientProfileService.get_queryset(self.request.user)
 
     def perform_create(self, serializer):
-        user_id = self.request.data.get('user')
-        if not user_id:
-            raise serializers.ValidationError({"user": "شناسه کاربر الزامی است."})
-        user = get_object_or_404(User, pk=user_id)
-        serializer.save(user=user)
+        serializer.save(user=self.request.user)
 
     # ========== Set Location ==========
     @action(detail=False, methods=['post'], url_path='set-location')
